@@ -1,4 +1,4 @@
-import { COMPANIES, type CompanyId } from "@/pages/types/companies";
+import { COMPANIES, type CompanyId } from "@/constants/companies";
 import { CheckCircle } from "lucide-react";
 
 type TechnologyCardProps = {

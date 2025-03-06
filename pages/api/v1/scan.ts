@@ -1,4 +1,4 @@
-import type { CompanyId } from "@/pages/types/companies";
+import type { CompanyId } from "@/constants/companies";
 import axios from "axios";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
@@ -57,7 +57,6 @@ export default async function handler(req: NextRequest) {
   }
 
   const websiteHomepageHtml = await fetchHtml(targetUrl);
-  console.log("websiteHomepageHtml:", websiteHomepageHtml);
 
   const detectedCompanyIds: CompanyId[] = [];
 

@@ -1,16 +1,42 @@
-import CompanyCard from "@/components/CompanyCard";
-import { type CompanyId } from "@/pages/types/companies";
+import { COMPANIES, CompanyId } from "@/constants/companies";
+import { useState } from "react";
 
-type CompanyListProps = {
+interface CompanyListProps {
   companyIds: CompanyId[];
-};
+  isProbablyMasjid?: boolean;
+}
 
-export default function CompanyList({ companyIds }: CompanyListProps) {
+export default function CompanyList({
+  companyIds,
+  isProbablyMasjid,
+}: CompanyListProps) {
+  const [expandedCompany, setExpandedCompany] = useState<CompanyId | null>(
+    null
+  );
+
+  const toggleExpand = (id: CompanyId) => {
+    setExpandedCompany(expandedCompany === id ? null : id);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      {companyIds.map((companyId) => (
-        <CompanyCard key={companyId} companyId={companyId} />
-      ))}
+    <div className="space-y-6">
+      {companyIds.map((id) => {
+        const company = COMPANIES.find((c) => c.id === id);
+        if (!company) {
+          throw new Error(`Company with ID ${id} not found`);
+        }
+
+        const isExpanded = expandedCompany === id;
+
+        return (
+          <company.Article
+            key={id}
+            isProbablyMasjid={isProbablyMasjid}
+            isExpanded={isExpanded}
+            toggleExpanded={() => toggleExpand(id)}
+          />
+        );
+      })}
     </div>
   );
 }
