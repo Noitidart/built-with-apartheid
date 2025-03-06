@@ -10,6 +10,7 @@ export const config = {
 export type ScanResult = {
   url: string;
   detectedCompanyIds: CompanyId[];
+  isProbablyMasjid: boolean;
 };
 
 const ScanRequestBodySchema = z.object({
@@ -57,6 +58,7 @@ export default async function handler(req: NextRequest) {
   }
 
   const websiteHomepageHtml = await fetchHtml(targetUrl);
+  const websiteHomepageHtmlLowerCase = websiteHomepageHtml.toLowerCase();
 
   const detectedCompanyIds: CompanyId[] = [];
 
@@ -73,10 +75,17 @@ export default async function handler(req: NextRequest) {
     detectedCompanyIds.push("wix");
   }
 
+  const isProbablyMasjid =
+    websiteHomepageHtmlLowerCase.includes("mosque") ||
+    websiteHomepageHtmlLowerCase.includes("masjid") ||
+    websiteHomepageHtmlLowerCase.includes("islamic") ||
+    websiteHomepageHtmlLowerCase.includes("pray");
+
   return new Response(
     JSON.stringify({
       url: targetUrl,
       detectedCompanyIds,
+      isProbablyMasjid,
     }),
     { status: 200 }
   );

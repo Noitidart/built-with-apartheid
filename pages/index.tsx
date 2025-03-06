@@ -20,14 +20,14 @@ const geistMono = Geist_Mono({
 export default function Home() {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState<ScanResult | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [showIntro, setShowIntro] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
 
   const runScan = async (url: string) => {
     setScanning(true);
-    setResults(null);
+    setScanResult(null);
     setError(null);
 
     // Update URL without refreshing page
@@ -44,7 +44,7 @@ export default function Home() {
         // seconds so user can read it to see what just happened.
         delay(2000),
       ]);
-      setResults(response.data);
+      setScanResult(response.data);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const errorMessage =
@@ -268,10 +268,10 @@ export default function Home() {
             </motion.div>
           )}
 
-          {results && !scanning && !error && (
+          {scanResult && !scanning && !error && (
             <motion.div
               className={`w-full p-6 rounded-lg border ${
-                !!results.detectedCompanyIds.length
+                !!scanResult.detectedCompanyIds.length
                   ? "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
                   : "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
               }`}
@@ -281,11 +281,11 @@ export default function Home() {
               transition={{ duration: 0.5 }}
             >
               <h3 className="text-xl font-medium mb-4">
-                Scan Results for {results.url}
+                Scan Results for {scanResult.url}
               </h3>
 
               <div className="flex items-center mb-4">
-                {!!results.detectedCompanyIds.length ? (
+                {!!scanResult.detectedCompanyIds.length ? (
                   <div className="flex items-center text-red-600 dark:text-red-400">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -329,18 +329,21 @@ export default function Home() {
                 )}
               </div>
               <p className="text-lg mb-6">
-                {!!results.detectedCompanyIds.length
+                {!!scanResult.detectedCompanyIds.length
                   ? `This website appears to use Isnotreal technologies. The data privacy and security of your organization and partners have been compromised.`
                   : `Your website does not appear to use any Isnotreal technologies. Continue maintaining high security standards.`}
               </p>
 
-              {!!results.detectedCompanyIds.length && (
+              {!!scanResult.detectedCompanyIds.length && (
                 <>
                   <h4 className="text-lg font-medium mb-3">
                     Detected Technologies:
                   </h4>
 
-                  <CompanyList companyIds={results.detectedCompanyIds} />
+                  <CompanyList
+                    companyIds={scanResult.detectedCompanyIds}
+                    isProbablyMasjid={scanResult.isProbablyMasjid}
+                  />
                 </>
               )}
             </motion.div>
