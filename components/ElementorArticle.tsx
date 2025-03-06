@@ -4,14 +4,10 @@ import EthicalAlternativesButton from "./EthicalAlternativesButton";
 
 interface ElementorArticleProps {
   isProbablyMasjid?: boolean;
-  isExpanded: boolean;
-  toggleExpanded: () => void;
 }
 
 const ElementorArticle: React.FC<ElementorArticleProps> = ({
-  isProbablyMasjid = false,
-  isExpanded,
-  toggleExpanded,
+  isProbablyMasjid,
 }) => {
   return (
     <div className="bg-white dark:bg-gray-800">
@@ -22,9 +18,9 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
         </h3>
 
         <p className="text-gray-700 dark:text-gray-300 mb-4">
-          Elementor is an Israeli-owned WordPress page builder plugin. You're
-          using it as your website's design system to create and edit pages with
-          its drag-and-drop visual editor.
+          Elementor is an Israeli-owned WordPress page builder plugin.
+          You&apos;re using it as your website&apos;s design system to create
+          and edit pages with its drag-and-drop visual editor.
         </p>
 
         <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
@@ -40,7 +36,8 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
               website
             </li>
             <li>
-              You're likely paying for Elementor Pro's annual subscription
+              You&apos;re likely paying for Elementor Pro&apos;s annual
+              subscription
             </li>
             <li>
               Your content remains in WordPress, but the design layer is
@@ -82,7 +79,9 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
                 No more plugin compatibility issues or WordPress security
                 concerns
               </li>
-              <li>Faster page load times without Elementor's heavy code</li>
+              <li>
+                Faster page load times without Elementor&apos;s heavy code
+              </li>
               <li>
                 Pre-built components specifically designed for Islamic centers
               </li>

@@ -4,15 +4,9 @@ import React from "react";
 
 interface WixArticleProps {
   isProbablyMasjid?: boolean;
-  isExpanded: boolean;
-  toggleExpanded: () => void;
 }
 
-const WixArticle: React.FC<WixArticleProps> = ({
-  isProbablyMasjid = false,
-  isExpanded,
-  toggleExpanded,
-}) => {
+const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
   return (
     <div className="bg-white dark:bg-gray-800">
       {/* Main content - Header is already handled by CompanyList */}
