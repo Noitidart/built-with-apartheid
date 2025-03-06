@@ -13,12 +13,24 @@ const geistMono = Geist_Mono({
 });
 
 export default function Home() {
-  const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<{
+    url: string;
+    detected: boolean;
+  } | null>(null);
 
-  const handleScan = (e) => {
+  const startScanOnSubmit = function startScanOnSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const url = formData.get("url");
+    if (!url || typeof url !== "string") {
+      // TODO: show validation errors
+      return;
+    }
+
     setScanning(true);
     // Mock scanning process
     setTimeout(() => {
@@ -92,12 +104,10 @@ export default function Home() {
             visit.
           </p>
 
-          <form onSubmit={handleScan} className="mt-8">
+          <form onSubmit={startScanOnSubmit} className="mt-8">
             <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
                 placeholder="Enter website URL (e.g., example.com)"
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 required
