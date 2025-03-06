@@ -61,7 +61,8 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Identify websites that compromise your security and safety
+          Identify if your organization and partners have comprimised security
+          and safety by your website
         </motion.p>
       </header>
 
@@ -119,8 +120,10 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="url"
+                name="url"
                 placeholder="Enter website URL (e.g., example.com)"
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                disabled={scanning}
                 required
               />
               <button
@@ -183,8 +186,8 @@ export default function Home() {
 
       <footer className="mt-16 py-6 border-t border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 w-full">
         <p>
-          © {new Date().getFullYear()} Website Scanner | For educational
-          purposes only
+          Made with <span className="dark:hidden">❤️</span>
+          <span className="hidden dark:inline">🤍</span> by The Masjid App
         </p>
       </footer>
     </div>
