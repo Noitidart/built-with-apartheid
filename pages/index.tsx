@@ -4,6 +4,7 @@ import axios from "axios";
 import delay from "delay";
 import { AnimatePresence, motion } from "motion/react";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 
@@ -130,21 +131,21 @@ export default function Home() {
               transition={{ duration: 0.4 }}
             >
               <motion.div
-                className="relative p-8 md:p-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700"
+                className="relative py-8 px-6 md:p-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.4 }}
               >
-                <div className="absolute text-8xl text-gray-100 dark:text-gray-700 top-4 left-4 opacity-50">
+                <div className="absolute text-[15rem] leading-none text-gray-200 dark:text-gray-700 -top-3 right-1 opacity-50">
                   &quot;
                 </div>
                 <blockquote className="relative z-10">
                   <p className="text-2xl italic mb-4 text-center">
-                    &quot;When God is with you, no one can do you harm even if
-                    all the bad in the world unites against you.&quot;
+                    If God is with you, no one can do you harm even if all the
+                    bad in the world unites against you.
                   </p>
-                  <footer className="text-right text-gray-500 dark:text-gray-400">
+                  <footer className="text-right text-gray-500 dark:text-gray-400 font-semibold">
                     — Sacred Wisdom
                   </footer>
                 </blockquote>
@@ -158,27 +159,49 @@ export default function Home() {
                 transition={{ duration: 0.4 }}
               >
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Trusting to partner with Israel in building out your
-                  organization is unlike the above wisdom. Consider how Israel
-                  has historically treated even its closest ally, the United
-                  States - extracting resources, intelligence, and financial
-                  support while offering questionable returns. A concerning
-                  track record over the past century.
+                  Trusting to have Israel with your organization is unlike the
+                  above wisdom. Consider how Israel has historically treated its
+                  closest ally, the United States - extracting resources,
+                  intelligence, and financial support while offering
+                  questionable returns.
                 </p>
 
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Companies with Israeli subprocessors open themselves up to
-                  significant liability due to the well-known connection between
-                  Israeli companies and the military, as demonstrated by
-                  Israel&apos;s pager attack and the WhatsApp data alleged to be
-                  used in Lavender. This is a liability to your organization and
-                  your partners.
+                  Organizations with Israeli subprocessors open themselves up to
+                  significant liability due to well-known connections between
+                  Israeli companies and the military. As demonstrated by their
+                  subversion of the civilian supply chain in Israel&apos;s pager
+                  attack and the WhatsApp data alleged to be used in{" "}
+                  <Link
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    href="https://blog.paulbiggar.com/meta-and-lavender/"
+                    target="_blank"
+                  >
+                    Lavender AI
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-4 h-4 ml-1 inline"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                        clipRule="evenodd"
+                      />
+                      <path
+                        fillRule="evenodd"
+                        d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </Link>
+                  .
                 </p>
 
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Scan your website now to see if it uses Israeli or partnered
-                  technologies. Ensure your online presence is secure and
-                  trustworthy.
+                  Ensure your website is keeping you and your partners secure
+                  and trusted.
                 </p>
               </motion.div>
             </motion.div>
@@ -186,7 +209,7 @@ export default function Home() {
         </AnimatePresence>
 
         <div className="w-full">
-          <form onSubmit={scanOnSubmit} className="mt-8">
+          <form onSubmit={scanOnSubmit} className="mt-4: sm:mt-8">
             <div className="flex flex-col sm:flex-row gap-4">
               <input
                 ref={urlInputRef}
