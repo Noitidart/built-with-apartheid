@@ -1,5 +1,4 @@
 import type { CompanyId } from "@/constants/companies";
-import axios from "axios";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -92,13 +91,18 @@ export default async function handler(req: NextRequest) {
 }
 
 async function fetchHtml(url: string): Promise<string> {
-  const response = await axios.get(url, {
+  const response = await fetch(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
     },
-    timeout: 10000, // 10 second timeout
   });
 
-  return response.data;
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch ${url}: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.text();
 }
