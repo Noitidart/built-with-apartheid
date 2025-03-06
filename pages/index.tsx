@@ -112,8 +112,8 @@ export default function Home() {
                 </div>
                 <blockquote className="relative z-10">
                   <p className="text-2xl italic mb-4 text-center">
-                    &quot;When God is with you, no one can be against you even
-                    if all the bad in the world unites against you.&quot;
+                    &quot;When God is with you, no one can do you harm even if
+                    all the bad in the world unites against you.&quot;
                   </p>
                   <footer className="text-right text-gray-500 dark:text-gray-400">
                     — Sacred Wisdom
