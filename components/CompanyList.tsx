@@ -96,11 +96,7 @@ export default function CompanyList({
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="overflow-hidden"
                 >
-                  <Article
-                    isProbablyMasjid={isProbablyMasjid}
-                    isExpanded={isExpanded}
-                    toggleExpanded={() => toggleExpanded(id)}
-                  />
+                  <Article isProbablyMasjid={isProbablyMasjid} />
                 </motion.div>
               )}
             </AnimatePresence>
