@@ -99,7 +99,13 @@ export default function Home() {
       <main className="flex flex-col gap-10 w-full max-w-4xl">
         <AnimatePresence>
           {showIntro && (
-            <>
+            <motion.div
+              className="flex flex-col gap-10 w-full"
+              initial={{ opacity: 1, height: "auto" }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <motion.div
                 className="relative p-8 md:p-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -152,7 +158,7 @@ export default function Home() {
                   technologies.
                 </p>
               </motion.div>
-            </>
+            </motion.div>
           )}
         </AnimatePresence>
 
