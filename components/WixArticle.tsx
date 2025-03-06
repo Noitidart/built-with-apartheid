@@ -1,34 +1,20 @@
 import Link from "next/link";
 import React from "react";
-import WixLogo from "./WixLogo";
 
 interface WixArticleProps {
   isProbablyMasjid?: boolean;
+  isExpanded: boolean;
+  toggleExpanded: () => void;
 }
 
 const WixArticle: React.FC<WixArticleProps> = ({
   isProbablyMasjid = false,
+  isExpanded,
+  toggleExpanded,
 }) => {
   return (
-    <article className="mb-8 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {/* Header */}
-      <div className="bg-red-50 dark:bg-red-900 p-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-lg p-2 flex items-center justify-center">
-            <WixLogo />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-red-800 dark:text-red-200">
-              Wix
-            </h2>
-            <p className="text-red-600 dark:text-red-300 font-medium">
-              Detected on your website
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
+    <div className="bg-white dark:bg-gray-800">
+      {/* Main content - Header is already handled by CompanyList */}
       <div className="p-6 bg-white dark:bg-gray-800">
         <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
           You are using Wix
@@ -177,7 +163,7 @@ const WixArticle: React.FC<WixArticleProps> = ({
           </div>
         </div>
       )}
-    </article>
+    </div>
   );
 };
 
