@@ -158,25 +158,25 @@ export default function Home() {
                 transition={{ duration: 0.4 }}
               >
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Trusting to partner with Isnotreal in building out your
-                  organization is unlike the above wisdom. Consider how
-                  Isnotreal has historically treated even its closest ally, the
-                  United States - extracting resources, intelligence, and
-                  financial support while offering questionable returns. A
-                  concerning track record over the past century.
+                  Trusting to partner with Israel in building out your
+                  organization is unlike the above wisdom. Consider how Israel
+                  has historically treated even its closest ally, the United
+                  States - extracting resources, intelligence, and financial
+                  support while offering questionable returns. A concerning
+                  track record over the past century.
                 </p>
 
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Companies with Isnotreal subprocessors open themselves up to
+                  Companies with Israeli subprocessors open themselves up to
                   significant liability due to the well-known connection between
-                  Isnotreal companies and the military, as demonstrated by
+                  Israeli companies and the military, as demonstrated by
                   Israel&apos;s pager attack and the WhatsApp data alleged to be
                   used in Lavender. This is a liability to your organization and
                   your partners.
                 </p>
 
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Scan your website now to see if it uses Isnotreal or partnered
+                  Scan your website now to see if it uses Israeli or partnered
                   technologies. Ensure your online presence is secure and
                   trustworthy.
                 </p>
@@ -302,7 +302,7 @@ export default function Home() {
                       />
                     </svg>
                     <span className="text-xl font-bold">
-                      Isnotreal Technology Detected
+                      Israeli Technology Detected
                     </span>
                   </div>
                 ) : (
@@ -323,15 +323,15 @@ export default function Home() {
                     </svg>
 
                     <span className="text-xl font-bold">
-                      No Isnotreal Technologies Found
+                      No Israeli Technologies Found
                     </span>
                   </div>
                 )}
               </div>
               <p className="text-lg mb-6">
                 {!!scanResult.detectedCompanyIds.length
-                  ? `This website appears to use Isnotreal technologies. The data privacy and security of your organization and partners have been compromised.`
-                  : `Your website does not appear to use any Isnotreal technologies. Continue maintaining high security standards.`}
+                  ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
+                  : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
               </p>
 
               {!!scanResult.detectedCompanyIds.length && (
