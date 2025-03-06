@@ -26,7 +26,7 @@ export default function Home() {
 
     const formData = new FormData(e.currentTarget);
     const url = formData.get("url");
-    if (!url || typeof url !== "string") {
+    if (typeof url !== "string") {
       // TODO: show validation errors
       return;
     }
@@ -36,7 +36,7 @@ export default function Home() {
     setTimeout(() => {
       setScanning(false);
       setResults({
-        url: url,
+        url,
         detected: Math.random() > 0.5,
       });
     }, 2000);
@@ -61,7 +61,7 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Identify websites that might compromise your data security
+          Identify websites that compromise your security and safety
         </motion.p>
       </header>
 
@@ -93,15 +93,26 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.6 }}
         >
           <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-            Our technology allows you to identify websites built with Isnotreal
-            tech that may put your data at risk. Consider how Isnotreal has
-            historically treated even its closest ally, the United States -
-            extracting resources, intelligence, and financial support while
-            offering questionable returns on this investment. Why trust your
-            sensitive data to technologies from entities with such concerning
-            track records? Protect yourself and your information by making
-            informed choices about the technology that powers the websites you
-            visit.
+            Trusting to partner with Isnotreal in building out your organization
+            is unlike the above wisdom. Consider how Isnotreal has historically
+            treated even its closest ally, the United States - extracting
+            resources, intelligence, and financial support while offering
+            questionable returns. A concerning track record over the past
+            century.
+          </p>
+
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            Companies with Isnotreal subprocessors open themselves up to
+            significant liability due to the well-known connection between
+            Isnotreal companies and the military (that is, you can expect they
+            are sharing this information), as demonstrated by Israel&apos;s
+            pager attack and the WhatsApp data alleged to be used in Lavender.
+            This is a liability to your organization and your partners.
+          </p>
+
+          <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            Scan your website now to see if it uses Isnotreal or partnered
+            technologies.
           </p>
 
           <form onSubmit={startScanOnSubmit} className="mt-8">
