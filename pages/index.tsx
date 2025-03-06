@@ -61,12 +61,12 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <div className="absolute text-8xl text-gray-100 dark:text-gray-700 top-4 left-4 opacity-50">
-            "
+            &quot;
           </div>
           <blockquote className="relative z-10">
             <p className="text-2xl italic mb-4 text-center">
-              "When God is with you, no one can be against you even if all the
-              bad in the world unites against you."
+              &quot;When God is with you, no one can be against you even if all
+              the bad in the world unites against you.&quot;
             </p>
             <footer className="text-right text-gray-500 dark:text-gray-400">
               — Sacred Wisdom
