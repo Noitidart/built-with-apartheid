@@ -41,7 +41,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
 
       {/* Masjid-specific section */}
       {isProbablyMasjid && (
-        <div className="p-6 bg-green-50 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
+        <div className="p-6 bg-green-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
           <h3 className="text-lg font-bold mb-3 text-green-800 dark:text-green-200">
             Special Recommendation for Masajid
           </h3>
@@ -70,7 +70,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
               <li>Content management system that staff can easily update</li>
             </ul>
 
-            <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg mb-4">
+            <div className="bg-green-200 dark:bg-green-900 p-4 rounded-lg mb-4">
               <h5 className="font-medium text-green-800 dark:text-green-200 mb-2">
                 Features specifically for masajid:
               </h5>

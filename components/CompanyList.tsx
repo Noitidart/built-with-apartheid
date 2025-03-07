@@ -38,7 +38,7 @@ export default function CompanyList({
             {/* Header section (always visible) */}
             <div
               onClick={() => toggleExpanded(id)}
-              className="bg-red-50 dark:bg-red-900 p-6 cursor-pointer"
+              className="bg-red-300 dark:bg-red-900 p-6 cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
