@@ -21,7 +21,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
           hosting, domain connection, and design tools.
         </p>
 
-        <div className="mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+        <div className="mb-6 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
           <h4 className="font-medium mb-2 text-gray-800 dark:text-gray-200">
             What this means for you:
           </h4>
