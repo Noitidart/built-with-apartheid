@@ -13,6 +13,7 @@
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts"
 	},
 	"dependencies": {
+		"@tanstack/react-query": "^5.67.1",
 		"axios": "^1.8.1",
 		"delay": "^6.0.0",
 		"lucide-react": "^0.477.0",
