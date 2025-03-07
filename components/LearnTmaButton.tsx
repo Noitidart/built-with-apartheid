@@ -3,7 +3,7 @@ import Link from "next/link";
 const LearnTmaButton = () => {
   return (
     <Link
-      href="https://themasjidapp.com"
+      href="https://themasjidapp.org"
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center justify-center w-full px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
