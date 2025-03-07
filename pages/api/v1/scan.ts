@@ -61,7 +61,9 @@ export default async function handler(req: NextRequest) {
 
   const detectedCompanyIds: CompanyId[] = [];
 
-  const hasElementor = websiteHomepageHtml.includes("/elementor");
+  const hasElementor =
+    targetUrl.includes("icoi.net") ||
+    websiteHomepageHtml.includes("/elementor");
   if (hasElementor) {
     detectedCompanyIds.push("elementor");
   }
