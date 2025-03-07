@@ -79,21 +79,22 @@ export default function UrlPage() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-    const url = formData.get("url");
-    if (typeof url !== "string") {
+    const urlValue = formData.get("url");
+    if (typeof urlValue !== "string") {
       // TODO: show validation errors
       return;
     }
 
-    const urlWithoutProtocol = url.replace(/^https?:\/\//, "").toLowerCase();
+    const urlValueWithoutProtocol = urlValue
+      .replace(/^https?:\/\//, "")
+      .toLowerCase();
 
-    if (urlWithoutProtocol === url) {
-      console.log("refetching");
+    if (url && urlValueWithoutProtocol === url) {
       scanQuery.refetch();
       return;
     }
 
-    router.push(`/?url=${encodeURIComponent(urlWithoutProtocol)}`, undefined, {
+    router.push("/" + encodeURIComponent(urlValueWithoutProtocol), undefined, {
       // Update URL without refreshing page
       shallow: true,
     });
