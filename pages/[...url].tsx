@@ -115,7 +115,7 @@ export default function UrlPage() {
           transition={{ duration: 0.5 }}
         >
           <Link href="/" shallow>
-            Built With Isnotreal
+            Built With Apartheid
           </Link>
         </motion.h1>
         <motion.p
