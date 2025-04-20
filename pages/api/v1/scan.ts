@@ -80,7 +80,8 @@ export default async function handler(req: NextRequest) {
     websiteHomepageHtmlLowerCase.includes("mosque") ||
     websiteHomepageHtmlLowerCase.includes("masjid") ||
     websiteHomepageHtmlLowerCase.includes("islamic") ||
-    websiteHomepageHtmlLowerCase.includes("pray");
+    websiteHomepageHtmlLowerCase.includes("pray") ||
+    targetUrl.includes("icoi.net");
 
   return new Response(
     JSON.stringify({
