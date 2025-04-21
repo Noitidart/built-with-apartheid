@@ -388,7 +388,14 @@ export default function UrlPage() {
       <footer className="mt-16 py-6 border-t border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 w-full">
         <p>
           Made with <span className="dark:hidden">❤️</span>
-          <span className="hidden dark:inline">🤍</span> by The Masjid App
+          <span className="hidden dark:inline">🤍</span> by{" "}
+          <Link
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            href="https://techforpalestine.org/"
+            target="_blank"
+          >
+            Tech for Palestine
+          </Link>
         </p>
       </footer>
     </div>
