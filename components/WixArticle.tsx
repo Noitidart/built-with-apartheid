@@ -1,6 +1,6 @@
-import EthicalAlternativesButton from "@/components/EthicalAlternativesButton";
-import React from "react";
-import LearnTmaButton from "./LearnTmaButton";
+import EthicalAlternativesButton from '@/components/EthicalAlternativesButton';
+import React from 'react';
+import LearnTmaButton from './LearnTmaButton';
 
 interface WixArticleProps {
   isProbablyMasjid?: boolean;
@@ -76,14 +76,14 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
               </h5>
               <ul className="grid grid-cols-2 gap-2">
                 {[
-                  "Prayer Times Widget",
-                  "Events Calendar",
-                  "Dynamic Slideshows",
-                  "Zakat Calculator",
-                  "Donation Processing",
-                  "News & Announcements",
-                  "Khutbah Archives",
-                  "Ramadan Schedule Generator",
+                  'Prayer Times Widget',
+                  'Events Calendar',
+                  'Dynamic Slideshows',
+                  'Zakat Calculator',
+                  'Donation Processing',
+                  'News & Announcements',
+                  'Khutbah Archives',
+                  'Ramadan Schedule Generator'
                 ].map((feature) => (
                   <li key={feature} className="flex items-center text-sm">
                     <svg

@@ -1,6 +1,6 @@
-import { COMPANIES, CompanyId } from "@/constants/companies";
-import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { COMPANIES, CompanyId } from '@/constants/companies';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 interface CompanyListProps {
   companyIds: CompanyId[];
@@ -9,7 +9,7 @@ interface CompanyListProps {
 
 export default function CompanyList({
   companyIds,
-  isProbablyMasjid,
+  isProbablyMasjid
 }: CompanyListProps) {
   const [expandedCompany, setExpandedCompany] = useState<CompanyId | null>(
     null
@@ -63,7 +63,7 @@ export default function CompanyList({
                       toggleExpanded(id);
                     }}
                   >
-                    {isExpanded ? "Show less" : "Read more"}
+                    {isExpanded ? 'Show less' : 'Read more'}
                     <motion.svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5 ml-1"
@@ -91,9 +91,9 @@ export default function CompanyList({
               {isExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
+                  animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
                   <Article isProbablyMasjid={isProbablyMasjid} />

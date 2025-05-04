@@ -1,5 +1,5 @@
-import Link from "next/link";
-import React from "react";
+import Link from 'next/link';
+import React from 'react';
 
 interface EthicalAlternativesButtonProps {
   companySlug: string;
@@ -10,7 +10,7 @@ interface EthicalAlternativesButtonProps {
 const EthicalAlternativesButton: React.FC<EthicalAlternativesButtonProps> = ({
   companySlug,
   companyName,
-  className = "",
+  className = ''
 }) => {
   return (
     <div className="flex flex-col items-start">

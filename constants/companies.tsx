@@ -1,7 +1,7 @@
-import ElementorArticle from "@/components/ElementorArticle";
-import ElementorLogo from "@/components/ElementorLogo";
-import WixArticle from "@/components/WixArticle";
-import WixLogo from "@/components/WixLogo";
+import ElementorArticle from '@/components/ElementorArticle';
+import ElementorLogo from '@/components/ElementorLogo';
+import WixArticle from '@/components/WixArticle';
+import WixLogo from '@/components/WixLogo';
 
 type Companies = {
   id: string;
@@ -16,17 +16,17 @@ type Companies = {
 
 export const COMPANIES = [
   {
-    id: "wix" as const,
-    name: "Wix",
+    id: 'wix' as const,
+    name: 'Wix',
     Logo: WixLogo,
-    Article: WixArticle,
+    Article: WixArticle
   },
   {
-    id: "elementor" as const,
-    name: "Elementor",
+    id: 'elementor' as const,
+    name: 'Elementor',
     Logo: ElementorLogo,
-    Article: ElementorArticle,
-  },
+    Article: ElementorArticle
+  }
 ] satisfies Companies[];
 
-export type CompanyId = (typeof COMPANIES)[number]["id"];
+export type CompanyId = (typeof COMPANIES)[number]['id'];

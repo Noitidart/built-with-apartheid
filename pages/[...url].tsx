@@ -1,22 +1,22 @@
-import CompanyList from "@/components/CompanyList";
-import type { ScanRequestBody, ScanResult } from "@/pages/api/v1/scan";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-import delay from "delay";
-import { AnimatePresence, motion } from "motion/react";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useEffect, useRef } from "react";
+import CompanyList from '@/components/CompanyList';
+import type { ScanRequestBody, ScanResult } from '@/pages/api/v1/scan';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import delay from 'delay';
+import { AnimatePresence, motion } from 'motion/react';
+import { Geist, Geist_Mono } from 'next/font/google';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect, useRef } from 'react';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin']
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin']
 });
 
 export default function UrlPage() {
@@ -24,26 +24,26 @@ export default function UrlPage() {
   const urlInputRef = useRef<HTMLInputElement>(null);
 
   const url =
-    typeof router.query.url === "string"
+    typeof router.query.url === 'string'
       ? router.query.url?.toLocaleLowerCase()
       : Array.isArray(router.query.url)
-      ? router.query.url.join("/").toLowerCase()
+      ? router.query.url.join('/').toLowerCase()
       : undefined;
 
   const scanQuery = useQuery({
-    queryKey: ["scan", url],
+    queryKey: ['scan', url],
     queryFn: async function fetchUrlScan() {
       if (!url) {
-        throw new Error("No URL provided");
+        throw new Error('No URL provided');
       }
 
       const [response] = await Promise.all([
-        axios.post<ScanResult>("/api/v1/scan", {
-          url,
+        axios.post<ScanResult>('/api/v1/scan', {
+          url
         } satisfies ScanRequestBody),
         // Make "Analyzing website technologies..." message last at least 2
         // seconds so user can read it to see what just happened.
-        delay(2000),
+        delay(2000)
       ]);
       return response.data;
     },
@@ -53,7 +53,7 @@ export default function UrlPage() {
     refetchOnReconnect: false,
     gcTime: 5000,
     staleTime: 0,
-    notifyOnChangeProps: ["data", "status", "error", "isFetching"],
+    notifyOnChangeProps: ['data', 'status', 'error', 'isFetching']
   });
 
   const shouldShowIntro = !router.isReady || !url;
@@ -68,7 +68,7 @@ export default function UrlPage() {
         return;
       }
 
-      urlInputRef.current.value = url || "";
+      urlInputRef.current.value = url || '';
     },
     [url]
   );
@@ -79,14 +79,14 @@ export default function UrlPage() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-    const urlValue = formData.get("url");
-    if (typeof urlValue !== "string") {
+    const urlValue = formData.get('url');
+    if (typeof urlValue !== 'string') {
       // TODO: show validation errors
       return;
     }
 
     const urlValueWithoutProtocol = urlValue
-      .replace(/^https?:\/\//, "")
+      .replace(/^https?:\/\//, '')
       .toLowerCase();
 
     if (url && urlValueWithoutProtocol === url) {
@@ -94,13 +94,13 @@ export default function UrlPage() {
       return;
     }
 
-    router.push("/" + encodeURIComponent(urlValueWithoutProtocol), undefined, {
+    router.push('/' + encodeURIComponent(urlValueWithoutProtocol), undefined, {
       // Update URL without refreshing page
-      shallow: true,
+      shallow: true
     });
 
     // Animated scroll to top
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -134,8 +134,8 @@ export default function UrlPage() {
           {shouldShowIntro && (
             <motion.div
               className="flex flex-col gap-10 w-full"
-              initial={{ opacity: 1, height: "auto" }}
-              animate={{ opacity: 1, height: "auto" }}
+              initial={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.4 }}
             >
@@ -180,7 +180,7 @@ export default function UrlPage() {
                   significant liability due to well-known connections between
                   Israeli companies and the military. As demonstrated by their
                   subversion of the civilian supply chain in Israel&apos;s pager
-                  attack and the WhatsApp data alleged to be used in{" "}
+                  attack and the WhatsApp data alleged to be used in{' '}
                   <Link
                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
                     href="https://blog.paulbiggar.com/meta-and-lavender/"
@@ -260,7 +260,7 @@ export default function UrlPage() {
                     Scanning...
                   </span>
                 ) : (
-                  "Scan Website"
+                  'Scan Website'
                 )}
               </button>
             </div>
@@ -306,8 +306,8 @@ export default function UrlPage() {
               <motion.div
                 className={`w-full p-6 rounded-lg border ${
                   !!scanQuery.data.detectedCompanyIds.length
-                    ? "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
-                    : "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
+                    ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                    : 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
                 }`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -388,7 +388,7 @@ export default function UrlPage() {
       <footer className="mt-16 py-6 border-t border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 w-full">
         <p>
           Made with <span className="dark:hidden">❤️</span>
-          <span className="hidden dark:inline">🤍</span> by{" "}
+          <span className="hidden dark:inline">🤍</span> by{' '}
           <Link
             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
             href="https://techforpalestine.org/"
@@ -405,9 +405,9 @@ export default function UrlPage() {
 function formatScanQueryError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const errorMessage =
-      error.response?.data?.error || "An unhandled scan request error occurred";
+      error.response?.data?.error || 'An unhandled scan request error occurred';
     return errorMessage;
   } else {
-    return "An unhandled error occurred";
+    return 'An unhandled error occurred';
   }
 }

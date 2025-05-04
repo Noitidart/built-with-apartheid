@@ -1,4 +1,4 @@
-import UrlPage from "./[...url]";
+import UrlPage from './[...url]';
 
 const HomePage = UrlPage;
 

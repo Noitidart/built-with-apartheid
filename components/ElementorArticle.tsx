@@ -1,13 +1,13 @@
-import React from "react";
-import EthicalAlternativesButton from "./EthicalAlternativesButton";
-import LearnTmaButton from "./LearnTmaButton";
+import React from 'react';
+import EthicalAlternativesButton from './EthicalAlternativesButton';
+import LearnTmaButton from './LearnTmaButton';
 
 interface ElementorArticleProps {
   isProbablyMasjid?: boolean;
 }
 
 const ElementorArticle: React.FC<ElementorArticleProps> = ({
-  isProbablyMasjid,
+  isProbablyMasjid
 }) => {
   return (
     <div className="bg-white dark:bg-gray-800">
@@ -94,14 +94,14 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
               </h5>
               <ul className="grid grid-cols-2 gap-2">
                 {[
-                  "Prayer Times Widget",
-                  "Events Calendar",
-                  "Dynamic Slideshows",
-                  "Donation Processing",
-                  "News & Announcements",
-                  "Khutbah Archives",
-                  "Ramadan Schedule",
-                  "Community Directory",
+                  'Prayer Times Widget',
+                  'Events Calendar',
+                  'Dynamic Slideshows',
+                  'Donation Processing',
+                  'News & Announcements',
+                  'Khutbah Archives',
+                  'Ramadan Schedule',
+                  'Community Directory'
                 ].map((feature) => (
                   <li key={feature} className="flex items-center text-sm">
                     <svg
