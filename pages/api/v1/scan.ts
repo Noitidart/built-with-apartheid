@@ -2,6 +2,25 @@ import type { CompanyId } from '@/constants/companies';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
+// Cloudflare Browser Rendering API Response Type
+type TCloudflareBrowserRenderingSuccessResponse = {
+  success: true;
+  result: string;
+  errors: [];
+  messages: string[];
+};
+
+// Examples:
+// {"success":false,"errors":[{"code":2001,"message":"Rate limit exceeded"}]}
+type TCloudflareBrowserRenderingErrorResponse = {
+  success: false;
+  errors: [{ code: number; message: string }];
+};
+
+type TCloudflareBrowserRenderingResponse =
+  | TCloudflareBrowserRenderingSuccessResponse
+  | TCloudflareBrowserRenderingErrorResponse;
+
 export const config = {
   runtime: 'edge'
 };
@@ -61,9 +80,7 @@ export default async function handler(req: NextRequest) {
 
   const detectedCompanyIds: CompanyId[] = [];
 
-  const hasElementor =
-    targetUrl.includes('icoi.net') ||
-    websiteHomepageHtml.includes('/elementor');
+  const hasElementor = websiteHomepageHtml.includes('/elementor');
   if (hasElementor) {
     detectedCompanyIds.push('elementor');
   }
@@ -80,8 +97,7 @@ export default async function handler(req: NextRequest) {
     websiteHomepageHtmlLowerCase.includes('mosque') ||
     websiteHomepageHtmlLowerCase.includes('masjid') ||
     websiteHomepageHtmlLowerCase.includes('islamic') ||
-    websiteHomepageHtmlLowerCase.includes('pray') ||
-    targetUrl.includes('icoi.net');
+    websiteHomepageHtmlLowerCase.includes('pray');
 
   return new Response(
     JSON.stringify({
@@ -95,17 +111,35 @@ export default async function handler(req: NextRequest) {
 }
 
 async function fetchHtml(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
-      Referer: 'https://www.google.com/',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive'
-    }
-  });
+  const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
-  return await response.text();
+  if (!cfApiToken || !cfAccountId) {
+    throw new Error('Cloudflare API credentials not configured');
+  }
+
+  const response = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/content`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cfApiToken}`
+      },
+      body: JSON.stringify({ url })
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Cloudflare API error: ${response.status} ${errorText}`);
+  }
+
+  const result = (await response.json()) as TCloudflareBrowserRenderingResponse;
+
+  if (!result.success) {
+    throw new Error(`Cloudflare API error: ${result.errors.join(', ')}`);
+  }
+
+  return result.result;
 }
