@@ -182,7 +182,7 @@ export default function UrlPage() {
                   subversion of the civilian supply chain in Israel&apos;s pager
                   attack and the WhatsApp data alleged to be used in{' '}
                   <Link
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline-svg underline-svg-offset-3"
                     href="https://blog.paulbiggar.com/meta-and-lavender/"
                     target="_blank"
                   >
@@ -390,7 +390,7 @@ export default function UrlPage() {
           Made with <span className="dark:hidden">❤️</span>
           <span className="hidden dark:inline">🤍</span> by{' '}
           <Link
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-svg"
             href="https://techforpalestine.org/"
             target="_blank"
           >
