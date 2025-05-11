@@ -21,13 +21,15 @@ const EthicalAlternativesButton: React.FC<EthicalAlternativesButtonProps> = ({
         // rel="noopener noreferrer"
         className={`inline-flex items-center justify-center px-5 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors ${className}`}
       >
-        <img
-          src="https://www.israelitechalternatives.com/tfp.jpeg"
-          alt="Boycottech logo"
-          className="w-5 h-5 mr-2 rounded-full"
-          width={20}
-          height={20}
-        />
+        <span className="inline-block bg-white rounded mr-2">
+          <img
+            src="/t4p.png"
+            alt="Boycottech logo"
+            className="w-5 h-5"
+            width={20}
+            height={20}
+          />
+        </span>
         View Ethical Alternatives to {companyName}
         <svg
           xmlns="http://www.w3.org/2000/svg"
