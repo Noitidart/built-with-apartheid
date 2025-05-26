@@ -446,6 +446,11 @@ type ScanResultsProps = {
 };
 
 function ScanResults({ data, onForceScan }: ScanResultsProps) {
+  const detectedCompanies = getDetectedCompanies(
+    data.scanInteraction.scan.changes
+  );
+  const hasDetectedCompanies = detectedCompanies.length > 0;
+
   return (
     <>
       <h3 className="text-lg sm:text-xl font-medium mb-4">
@@ -478,62 +483,53 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
       )}
 
       <div className="flex items-center mb-4">
-        {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0 ? (
-          <div className="flex items-center text-red-600 dark:text-red-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <span className="text-xl font-bold">
-              Israeli Technology Detected
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row sm:items-center text-green-600 dark:text-green-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+        <div
+          className={classnames(
+            'flex flex-col sm:flex-row sm:items-center',
+            hasDetectedCompanies
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-green-600 dark:text-green-400'
+          )}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={
+                hasDetectedCompanies
+                  ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                  : 'M5 13l4 4L19 7'
+              }
+            />
+          </svg>
 
-            <span className="text-xl font-bold">
-              No Israeli Technologies Found
-            </span>
-          </div>
-        )}
+          <span className="text-xl font-bold">
+            {hasDetectedCompanies
+              ? 'Israeli Technology Detected'
+              : 'No Israeli Technologies Found'}
+          </span>
+        </div>
       </div>
 
       <p className="text-base sm:text-lg mb-6">
-        {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0
+        {hasDetectedCompanies
           ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
           : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
       </p>
 
-      {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0 && (
+      {hasDetectedCompanies && (
         <>
           <h4 className="text-lg font-medium mb-3">Detected Technologies:</h4>
 
           <CompanyList
-            companyIds={getDetectedCompanies(data.scanInteraction.scan.changes)}
+            companyIds={detectedCompanies}
             isProbablyMasjid={data.website.isMasjid}
           />
         </>
