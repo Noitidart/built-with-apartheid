@@ -20,7 +20,7 @@ export default function CompanyList({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {companyIds.map((id) => {
         const company = COMPANIES.find((c) => c.id === id);
         if (!company) {
@@ -33,40 +33,42 @@ export default function CompanyList({
         return (
           <div
             key={id}
-            className="rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+            className="rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700 mx-2 sm:mx-0"
           >
             {/* Header section (always visible) */}
             <div
               onClick={() => toggleExpanded(id)}
-              className="bg-red-300 dark:bg-red-900 p-6 cursor-pointer"
+              className="bg-red-300 dark:bg-red-900 p-3 sm:p-6 cursor-pointer"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-lg p-2 flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 flex items-center justify-center flex-shrink-0">
                     <Logo />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-red-800 dark:text-red-200">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-2xl font-bold text-red-800 dark:text-red-200 leading-tight">
                       {company.name}
                     </h2>
-                    <p className="text-red-600 dark:text-red-300 font-medium">
+                    <p className="text-sm sm:text-base text-red-600 dark:text-red-300 font-medium">
                       Detected on your website
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center sm:justify-center flex-shrink-0">
                   <button
-                    className="text-red-700 dark:text-red-300 font-medium flex items-center"
+                    className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200 text-sm sm:text-base shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleExpanded(id);
                     }}
                   >
-                    {isExpanded ? 'Show less' : 'Read more'}
+                    <span className="sm:inline">
+                      {isExpanded ? 'Show less' : 'Read more'}
+                    </span>
                     <motion.svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 ml-1"
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
