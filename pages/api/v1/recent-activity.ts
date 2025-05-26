@@ -86,7 +86,7 @@ async function getRecentActivityHandler(req: NextRequest) {
           milestone: {
             data: {
               path: ['type'],
-              equals: ['company-added-first-time']
+              equals: 'company-added-first-time'
             }
           }
         },
@@ -94,7 +94,7 @@ async function getRecentActivityHandler(req: NextRequest) {
           milestone: {
             data: {
               path: ['type'],
-              equals: ['company-added-back']
+              equals: 'company-added-back'
             }
           }
         }
