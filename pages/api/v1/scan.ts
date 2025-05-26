@@ -53,7 +53,7 @@ const ScanRequestBodySchema = z.object({
   userId: z.string().min(1, 'User ID is required')
 });
 
-export type ScanRequestBody = z.infer<typeof ScanRequestBodySchema>;
+export type TScanRequestBody = z.infer<typeof ScanRequestBodySchema>;
 
 export default async function handler(req: NextRequest) {
   if (req.method !== 'POST') {

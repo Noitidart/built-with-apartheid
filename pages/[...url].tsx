@@ -1,7 +1,11 @@
 import CompanyList from '@/components/CompanyList';
-import type { ScanRequestBody, ScanResult } from '@/pages/api/v1/scan';
-import { useQuery } from '@tanstack/react-query';
+import Timeline from '@/components/Timeline';
+import type { CompanyId } from '@/constants/companies';
+import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
+import { getCurrentUserId } from '@/utils/user-utils';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import classnames from 'classnames';
 import delay from 'delay';
 import { AnimatePresence, motion } from 'motion/react';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -19,9 +23,10 @@ const geistMono = Geist_Mono({
   subsets: ['latin']
 });
 
-export default function UrlPage() {
+function UrlPage() {
   const router = useRouter();
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const url =
     typeof router.query.url === 'string'
@@ -30,6 +35,7 @@ export default function UrlPage() {
       ? router.query.url.join('/').toLowerCase()
       : undefined;
 
+  const shouldScanBypassCache = useRef(false);
   const scanQuery = useQuery({
     queryKey: ['scan', url],
     queryFn: async function fetchUrlScan() {
@@ -37,14 +43,30 @@ export default function UrlPage() {
         throw new Error('No URL provided');
       }
 
+      const userId = getCurrentUserId();
+
+      const force = shouldScanBypassCache.current;
+      shouldScanBypassCache.current = false;
+
       const [response] = await Promise.all([
-        axios.post<ScanResult>('/api/v1/scan', {
-          url
-        } satisfies ScanRequestBody),
+        axios.post<TScanResponseData>('/api/v1/scan', {
+          url,
+          userId,
+          force
+        } satisfies TScanRequestBody),
         // Make "Analyzing website technologies..." message last at least 2
         // seconds so user can read it to see what just happened.
         delay(2000)
       ]);
+
+      // Invalidate timeline query. As useTimelineQuery will refetch on mount if
+      // stale. And while this was loading the <Timeline> was not rendered, so it
+      // will render after this, fetching the timeline.
+      const websiteId = response.data.website.id;
+      queryClient.invalidateQueries({
+        queryKey: ['timeline', websiteId]
+      });
+
       return response.data;
     },
     enabled: !!url,
@@ -55,6 +77,11 @@ export default function UrlPage() {
     staleTime: 0,
     notifyOnChangeProps: ['data', 'status', 'error', 'isFetching']
   });
+
+  const forceScan = async function forceScan() {
+    shouldScanBypassCache.current = true;
+    scanQuery.refetch();
+  };
 
   const shouldShowIntro = !router.isReady || !url;
 
@@ -105,7 +132,11 @@ export default function UrlPage() {
 
   return (
     <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
+      className={classnames(
+        geistSans.variable,
+        geistMono.variable,
+        'grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100'
+      )}
     >
       <header className="w-full max-w-4xl">
         <motion.h1
@@ -304,84 +335,33 @@ export default function UrlPage() {
             // On refetch there is data, but it won't show spinner
             !scanQuery.isFetching && (
               <motion.div
-                className={`w-full p-6 rounded-lg border ${
-                  !!scanQuery.data.detectedCompanyIds.length
+                className={classnames(
+                  'w-full p-6 rounded-lg border',
+                  getDetectedCompanies(
+                    scanQuery.data.scanInteraction.scan.changes
+                  ).length > 0
                     ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
                     : 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                }`}
+                )}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h3 className="text-xl font-medium mb-4">
-                  Scan Results for {scanQuery.data.url}
-                </h3>
-
-                <div className="flex items-center mb-4">
-                  {!!scanQuery.data.detectedCompanyIds.length ? (
-                    <div className="flex items-center text-red-600 dark:text-red-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-8 w-8 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                      <span className="text-xl font-bold">
-                        Israeli Technology Detected
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-green-600 dark:text-green-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-8 w-8 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-
-                      <span className="text-xl font-bold">
-                        No Israeli Technologies Found
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-lg mb-6">
-                  {!!scanQuery.data.detectedCompanyIds.length
-                    ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
-                    : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
-                </p>
-
-                {!!scanQuery.data.detectedCompanyIds.length && (
-                  <>
-                    <h4 className="text-lg font-medium mb-3">
-                      Detected Technologies:
-                    </h4>
-
-                    <CompanyList
-                      companyIds={scanQuery.data.detectedCompanyIds}
-                      isProbablyMasjid={scanQuery.data.isProbablyMasjid}
-                    />
-                  </>
-                )}
+                <ScanResults data={scanQuery.data} onForceScan={forceScan} />
               </motion.div>
             )}
+
+          {/* Timeline Component - Show after scan results */}
+          {scanQuery.data && !scanQuery.isFetching && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Timeline website={scanQuery.data.website} />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -411,3 +391,143 @@ function formatScanQueryError(error: unknown): string {
     return 'An unhandled error occurred';
   }
 }
+
+// Helper function to extract detected companies from companyStatusChanges
+function getDetectedCompanies(companyStatusChanges: unknown): CompanyId[] {
+  if (!companyStatusChanges || typeof companyStatusChanges !== 'object')
+    return [];
+
+  const statusChanges = companyStatusChanges as Record<string, string>;
+  return Object.entries(statusChanges)
+    .filter(([, status]) => status === 'new' || status === 'still-present')
+    .map(([companyId]) => companyId as CompanyId);
+}
+
+function formatScanAge(createdAt: Date): string {
+  const scanDate = new Date(createdAt);
+  const now = new Date();
+  const diffInMs = now.getTime() - scanDate.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+  const string = rtf.format(-diffInDays, 'day');
+
+  if (diffInDays <= 1) {
+    return string;
+  } else {
+    return string + ' ago';
+  }
+}
+
+type ScanResultsProps = {
+  data: TScanResponseData;
+  onForceScan: () => void;
+};
+
+function ScanResults({ data, onForceScan }: ScanResultsProps) {
+  return (
+    <>
+      <h3 className="text-xl font-medium mb-4">
+        Scan Results for {data.website.hostname}
+      </h3>
+
+      {data.isCached && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-1">
+                Showing cached results from{' '}
+                {formatScanAge(data.scanInteraction.createdAt)}
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
+                Last scanned:{' '}
+                {data.scanInteraction.createdAt
+                  ? new Date(
+                      data.scanInteraction.createdAt
+                    ).toLocaleDateString()
+                  : 'Unknown'}
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                We don&apos;t re-scan by default unless it&apos;s been over 7
+                days, as most likely nothing changed.
+              </p>
+            </div>
+            <button
+              onClick={onForceScan}
+              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors whitespace-nowrap"
+            >
+              Fresh Scan
+            </button>
+          </div>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+            If you think something changed on this website, click &quot;Fresh
+            Scan&quot; to get current results.
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center mb-4">
+        {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0 ? (
+          <div className="flex items-center text-red-600 dark:text-red-400">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <span className="text-xl font-bold">
+              Israeli Technology Detected
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center text-green-600 dark:text-green-400">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+
+            <span className="text-xl font-bold">
+              No Israeli Technologies Found
+            </span>
+          </div>
+        )}
+      </div>
+      <p className="text-lg mb-6">
+        {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0
+          ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
+          : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
+      </p>
+
+      {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0 && (
+        <>
+          <h4 className="text-lg font-medium mb-3">Detected Technologies:</h4>
+
+          <CompanyList
+            companyIds={getDetectedCompanies(data.scanInteraction.scan.changes)}
+            isProbablyMasjid={data.website.isMasjid}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+export default UrlPage;
