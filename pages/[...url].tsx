@@ -322,7 +322,7 @@ function UrlPage() {
         <AnimatePresence>
           {scanQuery.isFetching && (
             <motion.div
-              className="w-full flex flex-col items-center justify-center p-8"
+              className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
