@@ -1,4 +1,5 @@
 import ActivityTables from '@/components/ActivityTables';
+import Button from '@/components/Button';
 import CompanyList from '@/components/CompanyList';
 import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
@@ -177,20 +178,12 @@ function UrlPage() {
                 required
               />
 
-              <button
+              <Button
                 type="submit"
-                disabled={scanQuery.isFetching}
-                className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium transition-colors flex items-center justify-center disabled:opacity-70"
-              >
-                {scanQuery.isFetching ? (
-                  <span className="inline-flex items-center">
-                    <Spinner color="white" className="-ml-1 mr-2" />
-                    Scanning...
-                  </span>
-                ) : (
-                  'Scan Website'
-                )}
-              </button>
+                loading={scanQuery.isFetching}
+                size="md"
+                label={scanQuery.isFetching ? 'Scanning...' : 'Scan Website'}
+              />
             </div>
           </form>
         </div>
@@ -426,12 +419,12 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
             </div>
 
-            <button
+            <Button
               onClick={onForceScan}
-              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors whitespace-nowrap"
-            >
-              Fresh Scan
-            </button>
+              size="sm"
+              label="Fresh Scan"
+              className="whitespace-nowrap"
+            />
           </div>
         </div>
       )}

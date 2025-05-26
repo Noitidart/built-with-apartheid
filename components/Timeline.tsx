@@ -1,3 +1,4 @@
+import Button from '@/components/Button';
 import { COMPANIES } from '@/constants/companies';
 import { assertNever } from '@/lib/typescript';
 import type {
@@ -311,13 +312,13 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
               disabled={isSubmitting}
             />
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                disabled={!postContent.trim() || isSubmitting}
-                className="text-sm sm:text-base px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-              >
-                {isSubmitting ? 'Posting...' : 'Post Anonymously'}
-              </button>
+                disabled={!postContent.trim()}
+                loading={isSubmitting}
+                label={isSubmitting ? 'Posting...' : 'Post Anonymously'}
+                className=""
+              />
             </div>
           </div>
         </form>
