@@ -65,7 +65,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
               <span className="mr-2">💬</span>
               Recent Posts
@@ -74,7 +74,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
               Latest outreach efforts
             </p>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {recentPosts.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No recent posts
@@ -112,7 +112,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
               <span className="mr-2">⚠️</span>
               Recent Detections
@@ -121,7 +121,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
               Newly found Israeli tech
             </p>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {recentDetections.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No recent detections
@@ -159,7 +159,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
               <span className="mr-2">🎉</span>
               Recent Removals
@@ -168,7 +168,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
               Successful community efforts
             </p>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {recentRemovals.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No recent removals
@@ -206,7 +206,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.4 }}
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
               <span className="mr-2">🏆</span>
               Community Milestones
@@ -215,7 +215,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
               First scans and new concerned users
             </p>
           </div>
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {recentMilestones.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 No recent milestones
