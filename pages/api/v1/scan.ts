@@ -182,6 +182,7 @@ export default async function handler(req: NextRequest) {
       where: { id: website.id },
       data: { isMasjid: isProbablyMasjid }
     });
+    website.isMasjid = isProbablyMasjid;
   }
 
   // Build changes for current scan
@@ -264,7 +265,7 @@ export default async function handler(req: NextRequest) {
       website: {
         id: website.id,
         hostname: website.hostname,
-        isMasjid: website.isMasjid
+        isMasjid: isProbablyMasjid
       }
     } satisfies TScanResponseData),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
