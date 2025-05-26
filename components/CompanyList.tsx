@@ -33,7 +33,7 @@ export default function CompanyList({
         return (
           <div
             key={id}
-            className="rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700 mx-2 sm:mx-0"
+            className="rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700 sm:mx-0"
           >
             {/* Header section (always visible) */}
             <div
@@ -56,34 +56,43 @@ export default function CompanyList({
                 </div>
 
                 <div className="flex items-center sm:justify-center flex-shrink-0">
-                  <button
-                    className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200 text-sm sm:text-base shadow-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleExpanded(id);
-                    }}
-                  >
-                    <span className="sm:inline">
-                      {isExpanded ? 'Show less' : 'Read more'}
-                    </span>
-                    <motion.svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 sm:h-5 sm:w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      initial={false}
-                      animate={{ rotate: isExpanded ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
+                  <div className="flex flex-col items-start sm:items-end gap-2">
+                    <button
+                      className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200 text-sm sm:text-base shadow-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpanded(id);
+                      }}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </motion.svg>
-                  </button>
+                      <span className="sm:inline">
+                        {isExpanded ? 'Show less' : 'Read more'}
+                      </span>
+                      <motion.svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 sm:h-5 sm:w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        initial={false}
+                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </motion.svg>
+                    </button>
+
+                    {isProbablyMasjid && (
+                      <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-md text-xs font-medium border border-green-200 dark:border-green-700">
+                        <span className="scale-125 inline-block">🤩</span>{' '}
+                        Special recommendation inside
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
