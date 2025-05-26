@@ -12,7 +12,7 @@ import {
 } from '@/types/interaction';
 import type { TWebsite } from '@/types/website';
 import { getCurrentUserId } from '@/utils/user-utils';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import axios from 'axios';
 import classnames from 'classnames';
 import { AnimatePresence, motion } from 'motion/react';
@@ -87,7 +87,7 @@ function Timeline({ website }: TimelineProps) {
           <PostForm
             websiteId={website.id}
             users={data.users}
-            refetchTimeline={timelineQuery.refetch}
+            refetchTimelineQuery={timelineQuery.refetch}
           />
         </div>
 
@@ -247,10 +247,11 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
 type PostFormProps = {
   websiteId: number;
   users: TTimelineResponseData['users'];
-  refetchTimeline: () => void;
+  /** Should be awaitable to know when the refetch finishes */
+  refetchTimelineQuery: UseQueryResult<TTimelineResponseData, Error>['refetch'];
 };
 
-function PostForm({ websiteId, users, refetchTimeline }: PostFormProps) {
+function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
   const [postContent, setPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -259,14 +260,16 @@ function PostForm({ websiteId, users, refetchTimeline }: PostFormProps) {
     if (!postContent.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
+
     try {
       await axios.post<TPostResponseData>(`/api/v1/${websiteId}/post`, {
         body: postContent,
         userId: getCurrentUserId()
       } satisfies TPostRequestBody);
 
+      await refetchTimelineQuery();
+
       setPostContent('');
-      refetchTimeline();
     } catch (error) {
       console.error('Failed to submit post:', error);
       alert('Failed to submit post. Please try again later.');
