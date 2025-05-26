@@ -136,12 +136,12 @@ function UrlPage() {
       className={classnames(
         geistSans.variable,
         geistMono.variable,
-        'grid grid-rows-[auto_1fr_auto] items-center justify-items-center min-h-screen p-8 pb-20 gap-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100'
+        'min-h-screen p-4 sm:p-8 pb-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100'
       )}
     >
-      <header className="w-full max-w-4xl">
+      <header className="w-full max-w-4xl mx-auto">
         <motion.h1
-          className="text-4xl md:text-6xl font-bold text-center mb-6"
+          className="text-4xl sm:text-6xl font-bold text-center mb-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -150,18 +150,18 @@ function UrlPage() {
             Built With Apartheid
           </Link>
         </motion.h1>
+
         <motion.p
-          className="text-xl text-center text-gray-600 dark:text-gray-400"
+          className="mb-4 sm:text-xl text-center text-gray-600 dark:text-gray-400"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Identify if your website is keeping your organization and partners
-          protected.
+          Identify if a website is compromising the owner and its visitors.
         </motion.p>
       </header>
 
-      <main className="flex flex-col gap-10 w-full max-w-4xl">
+      <main className="flex flex-col gap-10 w-full max-w-4xl mx-auto">
         {/* Scan Input - Always visible */}
         <div className="w-full">
           <form onSubmit={goToUrlPageOnSubmit} className="mt-4: sm:mt-8">
