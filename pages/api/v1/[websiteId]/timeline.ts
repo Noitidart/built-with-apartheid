@@ -4,9 +4,10 @@ import {
   TIMELINE_INTERACTION_SELECT,
   type TTimelineInteraction
 } from '@/constants/timeline';
-import prisma from '@/lib/prisma';
+import { withPrisma } from '@/lib/prisma';
 import { isScanInteraction, type TInteraction } from '@/types/interaction';
 import type { TUser } from '@/types/user';
+import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -37,7 +38,7 @@ export type TTimelineResponseData = {
   companies: Array<TTimelineCompany>;
 };
 
-async function getTimelineHandler(req: NextRequest) {
+async function getTimelineHandler(prisma: PrismaClient, req: NextRequest) {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -223,4 +224,4 @@ function buildTimelineCompanies(inputs: {
   return timelineCompanies;
 }
 
-export default getTimelineHandler;
+export default withPrisma(getTimelineHandler);

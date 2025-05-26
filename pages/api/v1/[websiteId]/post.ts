@@ -1,11 +1,12 @@
 import { getRequestIp } from '@/lib/cf-utils.backend';
-import prisma from '@/lib/prisma';
+import { withPrisma } from '@/lib/prisma';
 import {
   assertIsPostInteraction,
   type TPostInteraction
 } from '@/types/interaction';
 import type { TPost } from '@/types/post';
 import type { TUser } from '@/types/user';
+import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -29,7 +30,7 @@ export type TPostRequestBody = {
 
 export type TPostResponseData = Record<string, never>;
 
-async function newPostHandler(req: NextRequest) {
+async function newPostHandler(prisma: PrismaClient, req: NextRequest) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -115,6 +116,7 @@ async function newPostHandler(req: NextRequest) {
   assertIsPostInteraction(interaction);
 
   await maybeCreatePromotedToConcernedUserMilestone({
+    prisma,
     mostRecentPostInteraction: interaction
   });
 
@@ -127,13 +129,14 @@ async function newPostHandler(req: NextRequest) {
 }
 
 async function maybeCreatePromotedToConcernedUserMilestone(inputs: {
+  prisma: PrismaClient;
   mostRecentPostInteraction: Pick<
     TPostInteraction,
     'id' | 'userId' | 'websiteId'
   >;
 }) {
   // Check if this is the user's first post on this website
-  const preceedingUserPost = await prisma.interaction.findFirst({
+  const preceedingUserPost = await inputs.prisma.interaction.findFirst({
     where: {
       id: { lt: inputs.mostRecentPostInteraction.id },
       userId: inputs.mostRecentPostInteraction.userId,
@@ -151,7 +154,7 @@ async function maybeCreatePromotedToConcernedUserMilestone(inputs: {
     return;
   }
 
-  await prisma.interaction.create({
+  await inputs.prisma.interaction.create({
     data: {
       type: 'MILESTONE',
       websiteId: inputs.mostRecentPostInteraction.websiteId,
@@ -168,4 +171,4 @@ async function maybeCreatePromotedToConcernedUserMilestone(inputs: {
   });
 }
 
-export default newPostHandler;
+export default withPrisma(newPostHandler);

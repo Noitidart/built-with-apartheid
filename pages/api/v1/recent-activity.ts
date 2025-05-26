@@ -1,5 +1,6 @@
 import { COMPANIES } from '@/constants/companies';
-import prisma from '@/lib/prisma';
+import { withPrisma } from '@/lib/prisma';
+import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 
 export const config = {
@@ -44,7 +45,10 @@ export type TRecentActivityResponseData = {
   }>;
 };
 
-async function getRecentActivityHandler(req: NextRequest) {
+async function getRecentActivityHandler(
+  prisma: PrismaClient,
+  req: NextRequest
+) {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -279,4 +283,4 @@ async function getRecentActivityHandler(req: NextRequest) {
   );
 }
 
-export default getRecentActivityHandler;
+export default withPrisma(getRecentActivityHandler);

@@ -8,11 +8,12 @@ import {
   type TTimelineScanInteraction
 } from '@/constants/timeline';
 import { getRequestIp } from '@/lib/cf-utils.backend';
-import prisma from '@/lib/prisma';
+import { withPrisma } from '@/lib/prisma';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
 import type { TWebsite } from '@/types/website';
+import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -55,7 +56,7 @@ const ScanRequestBodySchema = z.object({
 
 export type TScanRequestBody = z.infer<typeof ScanRequestBodySchema>;
 
-export default async function handler(req: NextRequest) {
+async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -247,13 +248,16 @@ export default async function handler(req: NextRequest) {
 
   await Promise.all([
     maybeCreateFirstScanMilestone({
+      prisma,
       scanInteraction,
       precedingScanInteraction
     }),
     maybeCreateCompanyAddedMilestone({
+      prisma,
       scanInteraction
     }),
     maybeCreateCompanyRemovedMilestone({
+      prisma,
       scanInteraction
     })
   ]);
@@ -307,6 +311,7 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 async function maybeCreateFirstScanMilestone(inputs: {
+  prisma: PrismaClient;
   scanInteraction: TTimelineScanInteraction;
   precedingScanInteraction: TTimelineScanInteraction | null;
 }) {
@@ -314,7 +319,7 @@ async function maybeCreateFirstScanMilestone(inputs: {
     return;
   }
 
-  await prisma.interaction.create({
+  await inputs.prisma.interaction.create({
     data: {
       type: 'MILESTONE',
       websiteId: inputs.scanInteraction.websiteId,
@@ -335,6 +340,7 @@ async function maybeCreateFirstScanMilestone(inputs: {
 // 1. "company-added-back" - when a company is added back after being removed
 // 2. "company-added-first-time" - when a company is added for the first time
 async function maybeCreateCompanyAddedMilestone(inputs: {
+  prisma: PrismaClient;
   scanInteraction: TTimelineScanInteraction;
 }) {
   const newCompanyIds = COMPANIES.map(getCompanyIdFromDescription).filter(
@@ -352,7 +358,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
       async function checkForPreviusNewDetectionForCompanyThenCreateMilestone(
         companyId
       ) {
-        const pastNewDetection = await prisma.scan.findFirst({
+        const pastNewDetection = await inputs.prisma.scan.findFirst({
           where: {
             websiteId: inputs.scanInteraction.websiteId,
             changes: {
@@ -364,7 +370,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
           select: { id: true }
         });
 
-        await prisma.interaction.create({
+        await inputs.prisma.interaction.create({
           data: {
             type: 'MILESTONE',
             websiteId: inputs.scanInteraction.websiteId,
@@ -391,6 +397,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
 // 1. "company-removed-but-has-others" - when a company is removed but other companies are still present
 // 2. "company-removed-and-no-others" - when a company is removed and no other companies are present
 async function maybeCreateCompanyRemovedMilestone(inputs: {
+  prisma: PrismaClient;
   scanInteraction: TTimelineScanInteraction;
 }) {
   // Identify if any companies were newly removed
@@ -414,7 +421,7 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
   );
 
   for (const companyId of removedCompanyIds) {
-    await prisma.interaction.create({
+    await inputs.prisma.interaction.create({
       data: {
         type: 'MILESTONE',
         websiteId: inputs.scanInteraction.websiteId,
@@ -434,3 +441,5 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
     });
   }
 }
+
+export default withPrisma(newScanHandler);
