@@ -50,7 +50,7 @@ export default function CompanyList({
                       {company.name}
                     </h2>
                     <p className="text-sm sm:text-base text-red-600 dark:text-red-300 font-medium">
-                      Detected on your website
+                      Critical Security Issue
                     </p>
                   </div>
                 </div>
