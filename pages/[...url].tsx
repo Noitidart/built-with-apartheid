@@ -357,7 +357,7 @@ function UrlPage() {
             !scanQuery.isFetching && (
               <motion.div
                 className={classnames(
-                  'w-full p-6 rounded-lg border',
+                  'w-full p-4 sm:p-6 rounded-lg border',
                   getDetectedCompanies(
                     scanQuery.data.scanInteraction.scan.changes
                   ).length > 0
@@ -448,7 +448,7 @@ type ScanResultsProps = {
 function ScanResults({ data, onForceScan }: ScanResultsProps) {
   return (
     <>
-      <h3 className="text-xl font-medium mb-4">
+      <h3 className="text-lg sm:text-xl font-medium mb-4">
         Scan Results for {data.website.hostname}
       </h3>
 
@@ -499,7 +499,7 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
             </span>
           </div>
         ) : (
-          <div className="flex items-center text-green-600 dark:text-green-400">
+          <div className="flex flex-col sm:flex-row sm:items-center text-green-600 dark:text-green-400">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 mr-2"
@@ -521,7 +521,8 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
           </div>
         )}
       </div>
-      <p className="text-lg mb-6">
+
+      <p className="text-base sm:text-lg mb-6">
         {getDetectedCompanies(data.scanInteraction.scan.changes).length > 0
           ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
           : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
