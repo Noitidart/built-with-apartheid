@@ -29,4 +29,12 @@ export const COMPANIES = [
   }
 ] satisfies Companies[];
 
+export type TCompanyDescription = (typeof COMPANIES)[number];
+export type TCompanyId = TCompanyDescription['id'];
 export type CompanyId = (typeof COMPANIES)[number]['id'];
+
+export function getCompanyIdFromDescription(
+  companyDescription: TCompanyDescription
+) {
+  return companyDescription.id;
+}
