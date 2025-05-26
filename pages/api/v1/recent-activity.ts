@@ -6,7 +6,7 @@ export const config = {
   runtime: 'edge'
 };
 
-export type TActivityResponseData = {
+export type TRecentActivityResponseData = {
   recentPosts: Array<{
     id: number;
     createdAt: string;
@@ -44,7 +44,7 @@ export type TActivityResponseData = {
   }>;
 };
 
-async function getActivityHandler(req: NextRequest) {
+async function getRecentActivityHandler(req: NextRequest) {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -269,7 +269,7 @@ async function getActivityHandler(req: NextRequest) {
       recentDetections,
       recentRemovals,
       recentMilestones
-    } satisfies TActivityResponseData),
+    } satisfies TRecentActivityResponseData),
     {
       status: 200,
       headers: {
@@ -279,4 +279,4 @@ async function getActivityHandler(req: NextRequest) {
   );
 }
 
-export default getActivityHandler;
+export default getRecentActivityHandler;

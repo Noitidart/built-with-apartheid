@@ -1,4 +1,4 @@
-import type { TActivityResponseData } from '@/pages/api/v1/activity';
+import type { TRecentActivityResponseData } from '@/pages/api/v1/recent-activity';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
@@ -6,8 +6,8 @@ export function useActivityQuery() {
   return useQuery({
     queryKey: ['activity'],
     queryFn: async function fetchActivity() {
-      const response = await axios.get<TActivityResponseData>(
-        '/api/v1/activity'
+      const response = await axios.get<TRecentActivityResponseData>(
+        '/api/v1/recent-activity'
       );
       return response.data;
     },
