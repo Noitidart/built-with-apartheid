@@ -454,25 +454,19 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
 
       {data.isCached && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-1">
-                Showing cached results from{' '}
+                Showing recent scan from{' '}
                 {formatScanAge(data.scanInteraction.createdAt)}
               </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
-                Last scanned:{' '}
-                {data.scanInteraction.createdAt
-                  ? new Date(
-                      data.scanInteraction.createdAt
-                    ).toLocaleDateString()
-                  : 'Unknown'}
-              </p>
+
               <p className="text-xs text-blue-600 dark:text-blue-400">
                 We don&apos;t re-scan by default unless it&apos;s been over 7
                 days, as most likely nothing changed.
               </p>
             </div>
+
             <button
               onClick={onForceScan}
               className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors whitespace-nowrap"
@@ -480,10 +474,6 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               Fresh Scan
             </button>
           </div>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-            If you think something changed on this website, click &quot;Fresh
-            Scan&quot; to get current results.
-          </p>
         </div>
       )}
 
