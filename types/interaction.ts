@@ -1,6 +1,6 @@
 import type { TMilestone } from '@/types/milestone';
+import type { TPost } from '@/types/post';
 import type { TScan } from '@/types/scan';
-import type { TUser } from '@/types/user';
 import type { Interaction } from '@prisma/client';
 
 export type TInteraction = Interaction;
@@ -62,26 +62,28 @@ export function isMilestoneInteraction<
   return interaction.type === 'MILESTONE' && interaction.milestone !== null;
 }
 
-export function isPostInteraction<
-  UInteraction extends Partial<TInteraction>,
-  UUser extends Partial<TUser>
->(
-  interaction: UInteraction & { userId: UUser | null }
-): interaction is UInteraction & {
+export type TPostInteraction = TInteraction & {
   type: 'POST';
-  userId: UUser;
+  userId: NonNullable<TInteraction['userId']>;
+  post?: TPost;
+};
+
+export function isPostInteraction<UInteraction extends TPostInteraction>(
+  interaction: UInteraction
+): interaction is Exclude<UInteraction, 'type' | 'userId'> & {
+  type: 'POST';
+  userId: NonNullable<UInteraction['userId']>;
 } {
   return interaction.type === 'POST' && interaction.userId !== null;
 }
 
 export function assertIsPostInteraction<
-  UInteraction extends Partial<TInteraction>,
-  UUser extends Partial<TUser>
+  UInteraction extends Pick<TInteraction, 'type' | 'userId'>
 >(
-  interaction: UInteraction & { userId: UUser | null }
-): asserts interaction is UInteraction & {
+  interaction: UInteraction
+): asserts interaction is Exclude<UInteraction, 'type' | 'userId'> & {
   type: 'POST';
-  userId: UUser;
+  userId: NonNullable<UInteraction['userId']>;
 } {
   if (interaction.type !== 'POST' || !interaction.userId) {
     console.error('This interaction does not have a user', { interaction });

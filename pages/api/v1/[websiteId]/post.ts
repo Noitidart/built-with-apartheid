@@ -1,5 +1,9 @@
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import prisma from '@/lib/prisma';
+import {
+  assertIsPostInteraction,
+  type TPostInteraction
+} from '@/types/interaction';
 import type { TPost } from '@/types/post';
 import type { TUser } from '@/types/user';
 import type { NextRequest } from 'next/server';
@@ -102,15 +106,16 @@ async function newPostHandler(req: NextRequest) {
     },
     select: {
       id: true,
+      type: true,
       websiteId: true,
       userId: true
     }
   });
 
+  assertIsPostInteraction(interaction);
+
   await maybeCreatePromotedToConcernedUserMilestone({
-    id: interaction.id,
-    websiteId: interaction.websiteId,
-    userId: interaction.userId!
+    mostRecentPostInteraction: interaction
   });
 
   return new Response(JSON.stringify({} satisfies TPostResponseData), {
@@ -121,35 +126,41 @@ async function newPostHandler(req: NextRequest) {
   });
 }
 
-async function maybeCreatePromotedToConcernedUserMilestone(interaction: {
-  id: number;
-  websiteId: number;
-  userId: string;
+async function maybeCreatePromotedToConcernedUserMilestone(inputs: {
+  mostRecentPostInteraction: Pick<
+    TPostInteraction,
+    'id' | 'userId' | 'websiteId'
+  >;
 }) {
   // Check if this is the user's first post on this website
   const preceedingUserPost = await prisma.interaction.findFirst({
     where: {
-      websiteId: interaction.websiteId,
-      userId: interaction.userId,
-      type: 'POST'
-    }
+      id: { lt: inputs.mostRecentPostInteraction.id },
+      userId: inputs.mostRecentPostInteraction.userId,
+      type: 'POST',
+      websiteId: inputs.mostRecentPostInteraction.websiteId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    select: { id: true }
   });
 
-  const hasPostedBefore = !!preceedingUserPost;
-  if (hasPostedBefore) {
+  const hastPostedOnThisWebsiteBefore = !!preceedingUserPost;
+  if (hastPostedOnThisWebsiteBefore) {
     return;
   }
 
   await prisma.interaction.create({
     data: {
       type: 'MILESTONE',
-      websiteId: interaction.websiteId,
+      websiteId: inputs.mostRecentPostInteraction.websiteId,
       milestone: {
         create: {
-          websiteId: interaction.websiteId,
+          websiteId: inputs.mostRecentPostInteraction.websiteId,
           data: {
             type: 'user-promoted-to-concerned',
-            userId: interaction.userId
+            userId: inputs.mostRecentPostInteraction.userId
           }
         }
       }
