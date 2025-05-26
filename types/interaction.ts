@@ -1,5 +1,6 @@
 import type { TMilestone } from '@/types/milestone';
 import type { TScan } from '@/types/scan';
+import type { TUser } from '@/types/user';
 import type { Interaction } from '@prisma/client';
 
 export type TInteraction = Interaction;
@@ -46,5 +47,44 @@ export function assertIsMilestoneInteraction<
     throw new Error(
       'This interaction does not have a milestone. This is a bug.'
     );
+  }
+}
+
+export function isMilestoneInteraction<
+  UInteraction extends Partial<TInteraction>,
+  UMilestone extends Partial<TMilestone>
+>(
+  interaction: UInteraction & { milestone: UMilestone | null }
+): interaction is UInteraction & {
+  type: 'MILESTONE';
+  milestone: UMilestone;
+} {
+  return interaction.type === 'MILESTONE' && interaction.milestone !== null;
+}
+
+export function isPostInteraction<
+  UInteraction extends Partial<TInteraction>,
+  UUser extends Partial<TUser>
+>(
+  interaction: UInteraction & { userId: UUser | null }
+): interaction is UInteraction & {
+  type: 'POST';
+  userId: UUser;
+} {
+  return interaction.type === 'POST' && interaction.userId !== null;
+}
+
+export function assertIsPostInteraction<
+  UInteraction extends Partial<TInteraction>,
+  UUser extends Partial<TUser>
+>(
+  interaction: UInteraction & { userId: UUser | null }
+): asserts interaction is UInteraction & {
+  type: 'POST';
+  userId: UUser;
+} {
+  if (interaction.type !== 'POST' || !interaction.userId) {
+    console.error('This interaction does not have a user', { interaction });
+    throw new Error('This interaction does not have a user. This is a bug.');
   }
 }
