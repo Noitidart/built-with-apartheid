@@ -1,16 +1,16 @@
+import React from 'react';
 import EthicalAlternativesButton from './EthicalAlternativesButton';
 import LearnTmaButton from './LearnTmaButton';
 
 type TCompanyArticleLayoutProps = {
   companyName: string;
   companySlug: string;
-  description: string;
+  description: string | React.ReactNode;
   implications: string[];
   isProbablyMasjid?: boolean;
   masjidSection: {
-    title: string;
     subtitle: string;
-    description: string;
+    description: string | React.ReactNode;
     benefits: string[];
     features: string[];
     conclusion: string;
@@ -62,7 +62,7 @@ const CompanyArticleLayout = function CompanyArticleLayout(
       {isProbablyMasjid && (
         <div className="p-3 sm:p-6 bg-green-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
           <h3 className="text-lg font-bold mb-2 sm:mb-3 text-green-800 dark:text-green-200">
-            {masjidSection.title}
+            Special Recommendation for Masjid&apos;s
           </h3>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm">
