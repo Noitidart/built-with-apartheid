@@ -43,7 +43,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
       {isProbablyMasjid && (
         <div className="p-6 bg-green-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
           <h3 className="text-lg font-bold mb-3 text-green-800 dark:text-green-200">
-            Special Recommendation for Masajid
+            Special Recommendation for Masjid&apos;s
           </h3>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 shadow-sm">
@@ -53,7 +53,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
 
             <p className="text-gray-700 dark:text-gray-300 mb-3">
               Moving from Wix to The Masjid App provides your Islamic center
-              with a platform specifically designed for masajid:
+              with a platform specifically designed for masjid&apos;s:
             </p>
 
             <ul className="list-disc pl-5 space-y-2 mb-4 text-gray-700 dark:text-gray-300">
@@ -72,7 +72,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
 
             <div className="bg-green-200 dark:bg-green-900 p-4 rounded-lg mb-4">
               <h5 className="font-medium text-green-800 dark:text-green-200 mb-2">
-                Features specifically for masajid:
+                Features specifically for masjid&apos;s:
               </h5>
               <ul className="grid grid-cols-2 gap-2">
                 {[
