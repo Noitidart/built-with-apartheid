@@ -242,32 +242,11 @@ function UrlPage() {
               </motion.div>
 
               <motion.div
-                className="relative py-8 px-6 md:p-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4 }}
-              >
-                <div className="absolute text-[15rem] leading-none text-gray-200 dark:text-gray-700 -top-3 right-1 opacity-50">
-                  &quot;
-                </div>
-                <blockquote className="relative z-10">
-                  <p className="text-2xl italic mb-4 text-center">
-                    If God is with you, no one can do you harm even if all the
-                    bad in the world unites against you.
-                  </p>
-                  <footer className="text-right text-gray-500 dark:text-gray-400 font-semibold">
-                    — Sacred Wisdom
-                  </footer>
-                </blockquote>
-              </motion.div>
-
-              <motion.div
                 className="space-y-6"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 60 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                   Trusting to have Israel with your organization is unlike the
