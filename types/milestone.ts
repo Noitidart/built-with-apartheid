@@ -1,5 +1,4 @@
 import type { CompanyId } from '@/constants/companies';
-import type { TUser } from '@/types/user';
 import type { Milestone } from '@prisma/client';
 
 export type TMilestone = Milestone;
@@ -12,7 +11,6 @@ declare global {
         }
       | {
           type: 'user-promoted-to-concerned';
-          userId: TUser['id'];
         }
       | {
           type:

@@ -92,7 +92,12 @@ model Interaction {
   scan Scan?
 
   // (One-to-one) One interaction can have zero or one milestone WHILE a milestone belongs to exactly one interaction
-  milestone Milestone?
+  milestone Milestone? @relation("MilestoneInteraction")
+
+  // (One-to-many) One interaction can have zero or many milestone data interactions WHILE a milestone data interaction belongs to exactly one interaction
+  // Note: Only human interactions (non-"MILESTONE type" interactions) can be the interaction referred to by milestone.dataInteraction.
+  // Note: Is many because one scan can detect multiple companies, which means two milestones with milestone.data.type of "company-added".
+  dataInteractionForMilestones Milestone[] @relation("MilestoneDataInteraction")
 
   // (One-to-one) One interaction can have zero or one post WHILE a post belongs to exactly one interaction
   post Post?
@@ -138,6 +143,10 @@ model Milestone {
   websiteId Int
 
   // (One-to-one) One milestone belongs to exactly one interaction WHILE an interaction can have zero or one milestone
-  interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interaction   Interaction @relation("MilestoneInteraction", fields: [interactionId], references: [id], onDelete: Cascade)
   interactionId Int         @unique
+
+  // (One-to-many) One milestone data belongs to exactly one interaction WHILE an interaction can have zero or many milestone data
+  dataInteraction   Interaction @relation("MilestoneDataInteraction", fields: [dataInteractionId], references: [id], onDelete: Cascade)
+  dataInteractionId Int
 }

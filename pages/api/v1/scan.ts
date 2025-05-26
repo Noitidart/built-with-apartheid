@@ -321,6 +321,7 @@ async function maybeCreateFirstScanMilestone(inputs: {
       milestone: {
         create: {
           websiteId: inputs.scanInteraction.websiteId,
+          dataInteractionId: inputs.scanInteraction.id,
           data: {
             type: 'first-scan'
           }
@@ -370,6 +371,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
             milestone: {
               create: {
                 websiteId: inputs.scanInteraction.websiteId,
+                dataInteractionId: inputs.scanInteraction.id,
                 data: {
                   type: pastNewDetection
                     ? 'company-added-back'
@@ -419,6 +421,7 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
         milestone: {
           create: {
             websiteId: inputs.scanInteraction.websiteId,
+            dataInteractionId: inputs.scanInteraction.id,
             data: {
               type: stilHasOtherCompanies
                 ? 'company-removed-but-has-others'
