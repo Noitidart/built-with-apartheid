@@ -73,7 +73,7 @@ function Timeline({ website }: TimelineProps) {
 
       {/* Community Timeline Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-bold mb-2">Community Timeline</h3>
           <p className="text-gray-600 dark:text-gray-400">
             Share your outreach efforts and coordinate with others to help
@@ -181,7 +181,7 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
 
   return (
     <motion.div
-      className="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+      className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -204,22 +204,31 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
 
         return (
           <div key={company.id} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 sm:mb-0">
                   Still using {companyInfo?.name || company.id}
                   {wasEverRemoved ? ' (added back after removal)' : ''}
                 </h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  First detected on{' '}
-                  {firstDetectedAt
-                    ? new Date(firstDetectedAt).toLocaleDateString()
-                    : 'Unknown'}{' '}
-                  • {totalScans} community scans • {totalConcernedUsers} people
-                  taking action
-                </p>
+                <div className="text-gray-600 dark:text-gray-400 space-y-1 sm:space-y-0">
+                  <div className="sm:inline">
+                    First detected on{' '}
+                    {firstDetectedAt
+                      ? new Date(firstDetectedAt).toLocaleDateString()
+                      : 'Unknown'}
+                  </div>
+                  <div className="flex flex-col sm:inline sm:ml-2 space-y-1 sm:space-y-0">
+                    <span className="sm:before:content-['•'] sm:before:mx-2">
+                      {totalScans} community scans
+                    </span>
+                    <span className="sm:before:content-['•'] sm:before:mx-2">
+                      {totalConcernedUsers} people taking action
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="text-center bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-2 rounded-lg">
+
+              <div className="text-center bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-2 rounded-lg sm:flex-shrink-0">
                 <div className="text-2xl font-bold">
                   {daysSinceFirst === 0 ? 'Today' : `Day ${daysSinceFirst + 1}`}
                 </div>
@@ -271,7 +280,7 @@ function PostForm({ websiteId, users, refetchTimeline }: PostFormProps) {
   return (
     <>
       {/* Current User Display */}
-      <div className="flex items-center gap-3 p-6 pb-4 text-sm">
+      <div className="flex items-center gap-3 p-4 sm:p-6 pb-4 text-sm">
         <div
           className={classnames(
             'w-6 h-6 rounded-full flex items-center justify-center text-white font-bold',
@@ -286,15 +295,15 @@ function PostForm({ websiteId, users, refetchTimeline }: PostFormProps) {
       </div>
 
       {/* Post Form */}
-      <div className="px-6 pb-6">
+      <div className="px-4 sm:px-6 pb-4">
         <form onSubmit={submitPost}>
           <div className="flex flex-col gap-3">
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
-              placeholder="Share what you're doing to help... Have you contacted them? Know someone who can help? Any updates on their response?"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
-              rows={3}
+              placeholder="Share what you're doing to help... Know the website owner? Contacted him? Know someone who can help? Any updates on their response?"
+              className="w-full p-2 text-sm sm:text-base sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              rows={5}
               maxLength={500}
               disabled={isSubmitting}
             />
@@ -302,9 +311,9 @@ function PostForm({ websiteId, users, refetchTimeline }: PostFormProps) {
               <button
                 type="submit"
                 disabled={!postContent.trim() || isSubmitting}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                className="text-sm sm:text-base px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
               >
-                {isSubmitting ? 'Sharing...' : 'Share Update'}
+                {isSubmitting ? 'Posting...' : 'Post Anonymously'}
               </button>
             </div>
           </div>
@@ -337,7 +346,7 @@ function InteractionLayout({
   tint
 }: InteractionLayoutProps) {
   const baseClasses =
-    'flex gap-4 p-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0';
+    'p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0';
 
   // Define tint-specific classes
   const tintClasses = {
@@ -384,20 +393,21 @@ function InteractionLayout({
 
   return (
     <div className={containerClasses}>
-      <div
-        className={classnames(
-          'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold',
-          avatar.className
-        )}
-      >
-        {avatar.content}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={classnames('font-semibold', currentTint.title)}>
-            {title}
-          </span>
-          <span className={classnames('text-sm', currentTint.timestamp)}>
+      {/* Mobile: Vertical stack, Desktop: Horizontal layout */}
+      <div className="flex flex-col sm:flex-row sm:gap-4">
+        {/* First row on mobile: Avatar and date */}
+        <div className="flex items-center justify-between mb-2 sm:mb-0 sm:contents">
+          <div
+            className={classnames(
+              'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold sm:flex-shrink-0',
+              avatar.className
+            )}
+          >
+            {avatar.content}
+          </div>
+          <span
+            className={classnames('text-sm sm:hidden', currentTint.timestamp)}
+          >
             {new Date(interaction.createdAt).toLocaleDateString()} at{' '}
             {new Date(interaction.createdAt).toLocaleTimeString([], {
               hour: '2-digit',
@@ -405,14 +415,43 @@ function InteractionLayout({
             })}
           </span>
         </div>
-        {subtitle && (
-          <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            {subtitle}
+
+        {/* Content area */}
+        <div className="flex-1 min-w-0">
+          {/* Desktop: Title and timestamp on same line */}
+          <div className="hidden sm:flex sm:items-center sm:gap-2 sm:mb-0">
+            <span className={classnames('font-semibold', currentTint.title)}>
+              {title}
+            </span>
+            <span className={classnames('text-sm', currentTint.timestamp)}>
+              {new Date(interaction.createdAt).toLocaleDateString()} at{' '}
+              {new Date(interaction.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
           </div>
-        )}
-        <p className={classnames(currentTint.body, tint ? 'font-medium' : '')}>
-          {body}
-        </p>
+
+          {/* Mobile: Title on its own row */}
+          <div className="sm:hidden mb-2">
+            <span className={classnames('font-semibold', currentTint.title)}>
+              {title}
+            </span>
+          </div>
+
+          {subtitle && (
+            <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {subtitle}
+            </div>
+          )}
+
+          {/* Body content */}
+          <p
+            className={classnames(currentTint.body, tint ? 'font-medium' : '')}
+          >
+            {body}
+          </p>
+        </div>
       </div>
     </div>
   );
