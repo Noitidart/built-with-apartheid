@@ -13,12 +13,17 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts"
   },
   "dependencies": {
+    "@prisma/adapter-neon": "^6.8.2",
+    "@prisma/client": "^6.8.2",
     "@tanstack/react-query": "^5.67.1",
     "axios": "^1.8.1",
     "delay": "^6.0.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.477.0",
     "motion": "^12.4.10",
+    "nanoid": "^5.1.5",
     "next": "15.1.6",
+    "prisma": "^6.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.2"
@@ -27,6 +32,7 @@
     "@cloudflare/next-on-pages": "^1.13.8",
     "@cloudflare/workers-types": "^4.20250303.0",
     "@eslint/eslintrc": "^3",
+    "@types/lodash": "^4.17.17",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -34,6 +40,7 @@
     "eslint-config-next": "15.1.6",
     "eslint-config-prettier": "^10.1.2",
     "postcss": "^8",
+    "prisma-json-types-generator": "^3.4.2",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vercel": "^41.3.1",
