@@ -1,5 +1,6 @@
 import { COMPANIES } from '@/constants/companies';
 import { withPrisma } from '@/lib/prisma';
+import { isFirstScanMilestone } from '@/types/milestone';
 import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 
@@ -8,6 +9,14 @@ export const config = {
 };
 
 export type TRecentActivityResponseData = {
+  scans7d: {
+    total: number;
+    new: number;
+  };
+  uniquePosters7d: {
+    total: number;
+    new: number;
+  };
   recentPosts: Array<{
     id: number;
     createdAt: string;
@@ -35,14 +44,6 @@ export type TRecentActivityResponseData = {
       hostname: string;
     };
   }>;
-  recentMilestones: Array<{
-    id: number;
-    createdAt: string;
-    type: string;
-    website: {
-      hostname: string;
-    };
-  }>;
 };
 
 async function getRecentActivityHandler(
@@ -54,6 +55,69 @@ async function getRecentActivityHandler(
       status: 405
     });
   }
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  // Scans query
+  const scanInteractions = await prisma.interaction.findMany({
+    where: {
+      type: 'SCAN',
+      createdAt: { gte: sevenDaysAgo }
+    },
+    select: {
+      dataInteractionForMilestones: {
+        select: {
+          data: true
+        }
+      }
+    }
+  });
+
+  const scans7d = {
+    total: scanInteractions.length,
+    new: scanInteractions.filter(function isFirstScanInteraction(interaction) {
+      return interaction.dataInteractionForMilestones.some(
+        isFirstScanMilestone
+      );
+    }).length
+  };
+
+  // Unique posters query
+  const posters = await prisma.user.findMany({
+    where: {
+      posts: {
+        some: {
+          createdAt: { gte: sevenDaysAgo }
+        }
+      }
+    },
+    select: {
+      posts: {
+        select: {
+          createdAt: true
+        },
+        orderBy: {
+          createdAt: 'asc'
+        },
+        take: 1
+      }
+    }
+  });
+
+  const uniquePosters7d = {
+    total: posters.length,
+    new: posters.filter(function isUsersFirstPostWithinLastSevenDays(user) {
+      // If the user was selected in this query he must have at least one post
+      const firstPostEver = user.posts[0];
+      if (!firstPostEver) {
+        throw new Error(
+          'Impossible unless dev messed up the posters query to select users that do not have posts'
+        );
+      }
+
+      return firstPostEver.createdAt >= sevenDaysAgo;
+    }).length
+  };
 
   // Get recent posts (last 10)
   const recentPostInteractions = await prisma.interaction.findMany({
@@ -165,47 +229,6 @@ async function getRecentActivityHandler(
     }
   });
 
-  // Get other recent milestones
-  const recentMilestoneInteractions = await prisma.interaction.findMany({
-    where: {
-      type: 'MILESTONE',
-      milestone: {
-        OR: [
-          {
-            data: {
-              path: ['type'],
-              equals: 'first-scan'
-            }
-          },
-          {
-            data: {
-              path: ['type'],
-              equals: 'user-promoted-to-concerned'
-            }
-          }
-        ]
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    },
-    take: 10,
-    select: {
-      id: true,
-      createdAt: true,
-      website: {
-        select: {
-          hostname: true
-        }
-      },
-      milestone: {
-        select: {
-          data: true
-        }
-      }
-    }
-  });
-
   // Transform the data
   const recentPosts = recentPostInteractions.map((interaction) => ({
     id: interaction.id,
@@ -253,26 +276,13 @@ async function getRecentActivityHandler(
     };
   });
 
-  const recentMilestones = recentMilestoneInteractions.map((interaction) => {
-    const milestoneData = interaction.milestone
-      ?.data as PrismaJson.TMilestoneData;
-
-    return {
-      id: interaction.id,
-      createdAt: interaction.createdAt.toISOString(),
-      type: milestoneData?.type || 'unknown',
-      website: {
-        hostname: interaction.website.hostname
-      }
-    };
-  });
-
   return new Response(
     JSON.stringify({
+      scans7d,
+      uniquePosters7d,
       recentPosts,
       recentDetections,
-      recentRemovals,
-      recentMilestones
+      recentRemovals
     } satisfies TRecentActivityResponseData),
     {
       status: 200,

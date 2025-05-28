@@ -1,21 +1,137 @@
 import { useActivityQuery } from '@/hooks/useActivityQuery';
 import classnames from 'classnames';
+import { sample } from 'lodash';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
-type TActivityTablesProps = {
-  className?: string;
-};
+function StatsShimmer() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-center space-x-2">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
+      </div>
+      <div className="flex items-center justify-center space-x-2">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-36 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-28 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-52 animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
 
-const ActivityTables = memo(function ActivityTables(
-  props: TActivityTablesProps
-) {
+const SITE_SLOGANS = [
+  'Online security, offline impact!',
+  'Digital dignity, real-world impact!',
+  'Breaking online apartheid!'
+];
+
+const MOVEMENT_SLOGANS = [
+  'Decolonizing the web!',
+  'Shattering apartheid!',
+  'Dismantling apartheid, bit by bit!',
+  'Digitally resisting!'
+];
+
+function StatsDisplay({
+  scans7d,
+  uniquePosters7d
+}: {
+  scans7d: { total: number; new: number };
+  uniquePosters7d: { total: number; new: number };
+}) {
+  // State in case in future I want to animate swap through these slogans
+  const [siteSlogan] = useState(sample(SITE_SLOGANS));
+  const [movementSlogan] = useState(sample(MOVEMENT_SLOGANS));
+
+  return (
+    <motion.div
+      className="space-y-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="text-center space-x-2 text-xl font-bold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-indigo-400 to-purple-600 bg-clip-text text-transparent animate-gradient-sweep">
+        <div className="flex items-center">
+          <span
+            // * "text-black" - so it doesn't get the gradient
+            className="text-black -translate-y-0.5 mr-1.5"
+          >
+            🎯
+          </span>
+
+          <span>{scans7d.total} sites scanned this week</span>
+        </div>
+
+        <span className="hidden md:block">•</span>
+
+        <span>{scans7d.new} were new</span>
+
+        <span className="hidden md:block text-gray-900 dark:text-gray-100">
+          •
+        </span>
+
+        <span className="inline-block align-middle text-gray-900 dark:text-gray-100">
+          {siteSlogan}
+        </span>
+      </div>
+
+      <div className="text-center space-x-2 text-lg font-semibold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-pink-400 to-rose-600 bg-clip-text text-transparent animate-gradient-sweep">
+        <div className="flex items-center">
+          <span
+            // * "text-black" - so it doesn't get the gradient
+            className="text-black -translate-y-px mr-2"
+          >
+            👥
+          </span>
+
+          <span>{uniquePosters7d.total} people took action</span>
+        </div>
+
+        <span className="hidden md:block">•</span>
+
+        <span>{uniquePosters7d.new} first-timers</span>
+
+        <span className="hidden md:block text-gray-900 dark:text-gray-100">
+          •
+        </span>
+
+        <span className="inline-block align-middle text-gray-900 dark:text-gray-100">
+          {movementSlogan}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+const ActivityTables = memo(function ActivityTables() {
   const activityQuery = useActivityQuery();
+
+  const header = (
+    <div className="mb-6">
+      {activityQuery.isLoading ? (
+        <StatsShimmer />
+      ) : activityQuery.data ? (
+        <StatsDisplay
+          scans7d={activityQuery.data.scans7d}
+          uniquePosters7d={activityQuery.data.uniquePosters7d}
+        />
+      ) : (
+        <p className="text-center text-gray-600 dark:text-gray-400">
+          Unable to load community stats
+        </p>
+      )}
+    </div>
+  );
 
   if (activityQuery.isLoading) {
     return (
-      <div className={props.className}>
+      <>
+        {header}
+
+        <div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div
@@ -37,21 +153,26 @@ const ActivityTables = memo(function ActivityTables(
           ))}
         </div>
       </div>
+      </>
     );
   }
 
   if (activityQuery.error || !activityQuery.data) {
     return (
-      <div className={props.className}>
+      <>
+        {header}
+
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>Unable to load community activity</p>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className={props.className}>
+    <>
+      {header}
+
       <motion.div
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         initial={{ opacity: 0, y: 20 }}

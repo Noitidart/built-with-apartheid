@@ -229,15 +229,6 @@ function UrlPage() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">
-                    Community Activity
-                  </h2>
-                  <p className="text-center text-gray-600 dark:text-gray-400">
-                    See what the community is discovering and join the effort to
-                    keep organizations secure
-                  </p>
-                </div>
                 <ActivityTables />
               </motion.div>
 

@@ -45,3 +45,11 @@ export function assertIsMilestoneDataOfType<
     );
   }
 }
+
+export function isFirstScanMilestone<
+  UMilestone extends Pick<Milestone, 'data'>
+>(
+  milestone: UMilestone
+): milestone is UMilestone & { data: { type: 'first-scan' } } {
+  return milestone.data.type === 'first-scan';
+}
