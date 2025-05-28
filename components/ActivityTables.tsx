@@ -264,10 +264,14 @@ function formatTimeAgo(dateString: string): string {
     return `${diffInMinutes}m ago`;
   } else if (diffInHours < 24) {
     return `${diffInHours}h ago`;
-  } else if (diffInDays < 7) {
+  } else if (diffInDays < 14) {
     return `${diffInDays}d ago`;
+  } else if (diffInDays < 49) {
+    const weeks = Math.floor(diffInDays / 7);
+    return `${weeks}w ago`;
   } else {
-    return date.toLocaleDateString();
+    const months = Math.floor(diffInDays / 30);
+    return `${months}m ago`;
   }
 }
 
