@@ -1,18 +1,21 @@
 import { useActivityQuery } from '@/hooks/useActivityQuery';
+import classnames from 'classnames';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { memo } from 'react';
 
-type ActivityTablesProps = {
+type TActivityTablesProps = {
   className?: string;
 };
 
-function ActivityTables({ className }: ActivityTablesProps) {
+const ActivityTables = memo(function ActivityTables(
+  props: TActivityTablesProps
+) {
   const activityQuery = useActivityQuery();
 
   if (activityQuery.isLoading) {
     return (
-      <div className={className}>
+      <div className={props.className}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div
@@ -39,7 +42,7 @@ function ActivityTables({ className }: ActivityTablesProps) {
 
   if (activityQuery.error || !activityQuery.data) {
     return (
-      <div className={className}>
+      <div className={props.className}>
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>Unable to load community activity</p>
         </div>
@@ -47,208 +50,204 @@ function ActivityTables({ className }: ActivityTablesProps) {
     );
   }
 
-  const { recentPosts, recentDetections, recentRemovals, recentMilestones } =
-    activityQuery.data;
-
   return (
-    <div className={className}>
+    <div className={props.className}>
       <motion.div
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Recent Posts */}
-        <motion.div
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <span className="mr-2">💬</span>
-              Recent Posts
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Latest outreach efforts
-            </p>
-          </div>
-          <div className="p-4 sm:p-6">
-            {recentPosts.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                No recent posts
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {recentPosts.slice(0, 5).map((post) => (
-                  <div
-                    key={post.id}
-                    className="border-l-2 border-blue-200 dark:border-blue-800 pl-3"
-                  >
-                    <p className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
-                      {post.body}
-                    </p>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <Link
-                        href={`/${post.website.hostname}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 underline"
-                      >
-                        {post.website.hostname}
-                      </Link>
-                      <span>{formatTimeAgo(post.createdAt)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
+        <ActivityTable
+          title="Recent Posts"
+          subtitle="Latest outreach efforts"
+          icon="💬"
+          items={activityQuery.data.recentPosts.map((post) => ({
+            id: post.id,
+            title: post.body,
+            websiteHostname: post.website.hostname,
+            createdAt: post.createdAt,
+            barColor: 'blue',
+            titleColor: 'gray',
+            clamped: true
+          }))}
+          delayFactor={0.1}
+          noItemsMessage="No recent posts"
+        />
 
-        {/* Recent Detections */}
-        <motion.div
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <span className="mr-2">⚠️</span>
-              Recent Detections
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Newly found Israeli tech
-            </p>
-          </div>
-          <div className="p-4 sm:p-6">
-            {recentDetections.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                No recent detections
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {recentDetections.slice(0, 5).map((detection) => (
-                  <div
-                    key={detection.id}
-                    className="border-l-2 border-red-200 dark:border-red-800 pl-3"
-                  >
-                    <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                      {detection.companyName}
-                    </p>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <Link
-                        href={`/${detection.website.hostname}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 underline"
-                      >
-                        {detection.website.hostname}
-                      </Link>
-                      <span>{formatTimeAgo(detection.createdAt)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
+        <ActivityTable
+          title="Recent Detections"
+          subtitle="Newly found Israeli tech"
+          icon="⚠️"
+          items={activityQuery.data.recentDetections.map((detection) => ({
+            id: detection.id,
+            title: detection.companyName,
+            websiteHostname: detection.website.hostname,
+            createdAt: detection.createdAt,
+            barColor: 'red',
+            titleColor: 'red',
+            bolded: true
+          }))}
+          delayFactor={0.2}
+          noItemsMessage="No recent detections"
+        />
 
-        {/* Recent Removals */}
-        <motion.div
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <span className="mr-2">🎉</span>
-              Recent Removals
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Successful community efforts
-            </p>
-          </div>
-          <div className="p-4 sm:p-6">
-            {recentRemovals.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                No recent removals
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {recentRemovals.slice(0, 5).map((removal) => (
-                  <div
-                    key={removal.id}
-                    className="border-l-2 border-green-200 dark:border-green-800 pl-3"
-                  >
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                      {removal.companyName} removed
-                    </p>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <Link
-                        href={`/${removal.website.hostname}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 underline"
-                      >
-                        {removal.website.hostname}
-                      </Link>
-                      <span>{formatTimeAgo(removal.createdAt)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
+        <ActivityTable
+          title="Recent Removals"
+          subtitle="Successful community efforts"
+          icon="🎉"
+          items={activityQuery.data.recentRemovals.map((removal) => ({
+            id: removal.id,
+            title: `${removal.companyName} removed`,
+            websiteHostname: removal.website.hostname,
+            createdAt: removal.createdAt,
+            barColor: 'green',
+            titleColor: 'green',
+            bolded: true
+          }))}
+          delayFactor={0.3}
+          noItemsMessage="No recent removals"
+        />
 
-        {/* Recent Milestones - spans full width on larger screens */}
-        <motion.div
-          className="md:col-span-2 lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-        >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <span className="mr-2">🏆</span>
-              Community Milestones
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              First scans and new concerned users
-            </p>
-          </div>
-          <div className="p-4 sm:p-6">
-            {recentMilestones.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
-                No recent milestones
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recentMilestones.slice(0, 6).map((milestone) => (
-                  <div
-                    key={milestone.id}
-                    className="border-l-2 border-purple-200 dark:border-purple-800 pl-3"
-                  >
-                    <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                      {formatMilestoneType(milestone.type)}
-                    </p>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      <Link
-                        href={`/${milestone.website.hostname}`}
-                        className="hover:text-blue-600 dark:hover:text-blue-400 underline"
-                      >
-                        {milestone.website.hostname}
-                      </Link>
-                      <span>{formatTimeAgo(milestone.createdAt)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
+        <ActivityTable
+          title="Community Milestones"
+          subtitle="First scans and new concerned users"
+          icon="🏆"
+          delayFactor={0.4}
+          className="md:col-span-2 lg:col-span-3"
+          gridClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          noItemsMessage="No recent milestones"
+          items={activityQuery.data.recentMilestones.map((milestone) => ({
+            id: milestone.id,
+            title: formatMilestoneType(milestone.type),
+            websiteHostname: milestone.website.hostname,
+            createdAt: milestone.createdAt,
+            barColor: 'purple',
+            titleColor: 'purple',
+            bolded: true
+          }))}
+        />
       </motion.div>
     </div>
   );
+});
+
+type TActivityItem = {
+  id: number;
+} & TActivityItemProps;
+
+type TActivityTableProps = {
+  title: string;
+  subtitle: string;
+  icon: string;
+  items: TActivityItem[];
+  delayFactor?: number;
+  className?: string;
+  gridClassName?: string;
+  noItemsMessage: string;
+};
+
+function ActivityTable({
+  title,
+  subtitle,
+  icon,
+  items,
+  delayFactor = 0.1,
+  className = '',
+  gridClassName = 'space-y-4',
+  noItemsMessage
+}: TActivityTableProps) {
+  return (
+    <motion.div
+      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, delay: delayFactor }}
+    >
+      <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+          <span className="mr-2">{icon}</span>
+          {title}
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          {subtitle}
+        </p>
+      </div>
+      <div className="p-4 sm:p-6">
+        {items.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            {noItemsMessage}
+          </p>
+        ) : (
+          <div className={gridClassName}>
+            {items.map((item) => (
+              <ActivityItem key={item.id} {...item} />
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
 }
+
+const BAR_COLOR_CLASSES = {
+  blue: 'border-blue-200 dark:border-blue-800',
+  red: 'border-red-200 dark:border-red-800',
+  green: 'border-green-200 dark:border-green-800',
+  purple: 'border-purple-200 dark:border-purple-800',
+  yellow: 'border-yellow-200 dark:border-yellow-800',
+  orange: 'border-orange-200 dark:border-orange-800',
+  pink: 'border-pink-200 dark:border-pink-800',
+  gray: 'border-gray-200 dark:border-gray-800',
+  teal: 'border-teal-200 dark:border-teal-800',
+  indigo: 'border-indigo-200 dark:border-indigo-800'
+};
+
+const TITLE_COLOR_CLASSES = {
+  red: 'text-red-700 dark:text-red-300',
+  green: 'text-green-700 dark:text-green-300',
+  purple: 'text-purple-700 dark:text-purple-300',
+  gray: 'text-gray-900 dark:text-gray-100'
+};
+
+type TActivityItemProps = {
+  title: string;
+  websiteHostname: string;
+  createdAt: string;
+  barColor: keyof typeof BAR_COLOR_CLASSES;
+  titleColor: keyof typeof TITLE_COLOR_CLASSES;
+  bolded?: boolean;
+  clamped?: boolean;
+};
+
+const ActivityItem = memo(function ActivityItem(props: TActivityItemProps) {
+  const titleClasses = classnames(
+    'text-sm',
+    props.bolded && 'font-medium',
+    props.clamped && 'line-clamp-2',
+    TITLE_COLOR_CLASSES[props.titleColor]
+  );
+
+  return (
+    <div
+      className={classnames(
+        'border-l-2 pl-3',
+        BAR_COLOR_CLASSES[props.barColor]
+      )}
+    >
+      <p className={titleClasses}>{props.title}</p>
+      <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <Link
+          href={`/${props.websiteHostname}`}
+          className="hover:text-blue-600 dark:hover:text-blue-400 underline"
+        >
+          {props.websiteHostname}
+        </Link>
+        <span>{formatTimeAgo(props.createdAt)}</span>
+      </div>
+    </div>
+  );
+});
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -286,4 +285,4 @@ function formatMilestoneType(type: string): string {
   }
 }
 
-export default memo(ActivityTables);
+export default ActivityTables;
