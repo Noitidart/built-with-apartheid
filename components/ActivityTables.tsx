@@ -190,17 +190,18 @@ function ActivityTable({
   );
 }
 
+// prettier-ignore
 const BAR_COLOR_CLASSES = {
-  blue: 'border-blue-200 dark:border-blue-800',
-  red: 'border-red-200 dark:border-red-800',
-  green: 'border-green-200 dark:border-green-800',
-  purple: 'border-purple-200 dark:border-purple-800',
-  yellow: 'border-yellow-200 dark:border-yellow-800',
-  orange: 'border-orange-200 dark:border-orange-800',
-  pink: 'border-pink-200 dark:border-pink-800',
-  gray: 'border-gray-200 dark:border-gray-800',
-  teal: 'border-teal-200 dark:border-teal-800',
-  indigo: 'border-indigo-200 dark:border-indigo-800'
+  blue: 'border-blue-200 dark:border-blue-800 hover:border-blue-500',
+  red: 'border-red-200 dark:border-red-800 hover:border-red-500',
+  green: 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-500',
+  purple: 'border-purple-200 dark:border-purple-800 hover:border-purple-500',
+  yellow: 'border-yellow-200 dark:border-yellow-800 hover:border-yellow-500',
+  orange: 'border-orange-200 dark:border-orange-800 hover:border-orange-500',
+  pink: 'border-pink-200 dark:border-pink-800 hover:border-pink-500',
+  gray: 'border-gray-200 dark:border-gray-800 hover:border-gray-500',
+  teal: 'border-teal-200 dark:border-teal-800 hover:border-teal-500',
+  indigo: 'border-indigo-200 dark:border-indigo-800 hover:border-indigo-500'
 };
 
 const TITLE_COLOR_CLASSES = {
@@ -229,23 +230,23 @@ const ActivityItem = memo(function ActivityItem(props: TActivityItemProps) {
   );
 
   return (
-    <div
+    <Link
+      href={`/${props.websiteHostname}`}
       className={classnames(
-        'border-l-2 pl-3',
+        'group block border-l-2 pl-3',
         BAR_COLOR_CLASSES[props.barColor]
       )}
     >
       <p className={titleClasses}>{props.title}</p>
+
       <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-        <Link
-          href={`/${props.websiteHostname}`}
-          className="hover:text-blue-600 dark:hover:text-blue-400 underline"
-        >
+        <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400 underline">
           {props.websiteHostname}
-        </Link>
+        </span>
+
         <span>{formatTimeAgo(props.createdAt)}</span>
       </div>
-    </div>
+    </Link>
   );
 });
 
