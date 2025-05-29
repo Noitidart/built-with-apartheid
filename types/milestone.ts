@@ -3,53 +3,95 @@ import type { Milestone } from '@prisma/client';
 
 export type TMilestone = Milestone;
 
+export type TFirstScanMilestoneData = {
+  type: 'first-scan';
+};
+export type TUserPromotedToConcernedMilestoneData = {
+  type: 'user-promoted-to-concerned';
+};
+export type TCompanyAddedFirstTimeMilestoneData = {
+  type: 'company-added-first-time';
+  companyId: CompanyId;
+};
+export type TCompanyRemovedButHasOthersMilestoneData = {
+  type: 'company-removed-but-has-others';
+  companyId: CompanyId;
+};
+export type TCompanyRemovedAndNoOthersMilestoneData = {
+  type: 'company-removed-and-no-others';
+  companyId: CompanyId;
+};
+export type TCompanyAddedBackMilestoneData = {
+  type: 'company-added-back';
+  companyId: CompanyId;
+};
 declare global {
   namespace PrismaJson {
     type TMilestoneData =
-      | {
-          type: 'first-scan';
-        }
-      | {
-          type: 'user-promoted-to-concerned';
-        }
-      | {
-          type:
-            | 'company-added-first-time'
-            | 'company-removed-but-has-others'
-            | 'company-removed-and-no-others'
-            | 'company-added-back';
-          companyId: CompanyId;
-        };
+      | TFirstScanMilestoneData
+      | TUserPromotedToConcernedMilestoneData
+      | TCompanyAddedFirstTimeMilestoneData
+      | TCompanyRemovedButHasOthersMilestoneData
+      | TCompanyRemovedAndNoOthersMilestoneData
+      | TCompanyAddedBackMilestoneData;
   }
 }
 
-export function isMilestoneDataOfType<
-  T extends PrismaJson.TMilestoneData['type']
->(
-  data: PrismaJson.TMilestoneData,
+export function buildIsMilestoneDataOfType<
+  T extends TMilestone['data']['type']
+>(type: T) {
+  return function isMilestoneDataOfType(
+    data: TMilestone['data']
+  ): data is Extract<TMilestone['data'], { type: T }> {
+    return data.type === type;
+  };
+}
+
+export function isMilestoneDataOfType<T extends TMilestone['data']['type']>(
+  data: TMilestone['data'],
   type: T
-): data is Extract<PrismaJson.TMilestoneData, { type: T }> {
+): data is Extract<TMilestone['data'], { type: T }> {
   return data.type === type;
-}
-
-export function assertIsMilestoneDataOfType<
-  T extends PrismaJson.TMilestoneData['type']
->(
-  data: PrismaJson.TMilestoneData,
-  type: T
-): asserts data is Extract<PrismaJson.TMilestoneData, { type: T }> {
-  if (data.type !== type) {
-    console.error(`This milestone data is not a ${type} type`, { data });
-    throw new Error(
-      `This milestone data is not a ${type} type. This is a bug.`
-    );
-  }
 }
 
 export function isFirstScanMilestone<
   UMilestone extends Pick<Milestone, 'data'>
 >(
   milestone: UMilestone
-): milestone is UMilestone & { data: { type: 'first-scan' } } {
+): milestone is UMilestone & { data: TFirstScanMilestoneData } {
   return milestone.data.type === 'first-scan';
+}
+
+export function assertIsCompanyRemovedMilestones<
+  UMilestone extends Pick<Milestone, 'data'>
+>(
+  milestones: UMilestone[]
+): asserts milestones is Array<
+  UMilestone & {
+    data:
+      | TCompanyRemovedButHasOthersMilestoneData
+      | TCompanyRemovedAndNoOthersMilestoneData;
+  }
+> {
+  if (!milestones.every(isCompanyRemovedMilestone)) {
+    console.error('Not all milestones are company removed milestones', {
+      milestones
+    });
+    throw new Error('Not all milestones are company removed milestones');
+  }
+}
+
+export function isCompanyRemovedMilestone<
+  UMilestone extends Pick<Milestone, 'data'>
+>(
+  milestone: UMilestone
+): milestone is UMilestone & {
+  data:
+    | TCompanyRemovedButHasOthersMilestoneData
+    | TCompanyRemovedAndNoOthersMilestoneData;
+} {
+  return (
+    milestone.data.type === 'company-removed-but-has-others' ||
+    milestone.data.type === 'company-removed-and-no-others'
+  );
 }

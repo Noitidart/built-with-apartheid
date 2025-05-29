@@ -1,4 +1,6 @@
+import { COMPANIES } from '@/constants/companies';
 import { useActivityQuery } from '@/hooks/useActivityQuery';
+import { assertNever } from '@/lib/typescript';
 import classnames from 'classnames';
 import { sample } from 'lodash';
 import { motion } from 'motion/react';
@@ -179,15 +181,23 @@ const ActivityTables = memo(function ActivityTables() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* <ActivityTable
+        <ActivityTable
           title="Recent Posts"
           subtitle="People taking action for change"
           icon="💬"
-          items={activityQuery.data.recentPosts.map((post) => ({
-            id: post.id,
-            title: post.body,
-            websiteHostname: post.website.hostname,
-            createdAt: post.createdAt,
+          items={activityQuery.data.websitesWithPostStats.map((website) => ({
+            id: website.id,
+            title: (function getRecentPostActivityTitle() {
+              if (website.users7d.total === 1) {
+                return '✊ First outreach started';
+              } else if (website.users7d.new > 0) {
+                return `🌟 ${website.users7d.new} new voices joined!`;
+              } else {
+                return `🔄 Campaign growing ${website.posts7d.total} new posts`;
+              }
+            })(),
+            websiteHostname: website.hostname,
+            createdAt: website.latestPostCreatedAt,
             barColor: 'blue',
             titleColor: 'gray',
             clamped: true
@@ -200,11 +210,23 @@ const ActivityTables = memo(function ActivityTables() {
           title="Team Effort Spotlight"
           subtitle="Campaigns making a difference"
           icon="⭐"
-          items={activityQuery.data.recentDetections.map((detection) => ({
-            id: detection.id,
-            title: detection.companyName,
-            websiteHostname: detection.website.hostname,
-            createdAt: detection.createdAt,
+          items={activityQuery.data.spotlightedWebsites.map((website) => ({
+            id: website.id,
+            title: (function getSpotlightedWebsiteTitle() {
+              if (website.engagementLevel === 'solo') {
+                return '🙏 1 person needs help RIGHT NOW';
+              } else if (website.engagementLevel === 'high') {
+                return `🔥 ${website.uniquePosterCount} people are looking for help`;
+              } else if (website.engagementLevel === 'inactive') {
+                return `📢 More voice needed`;
+              } else {
+                assertNever(website.engagementLevel);
+              }
+            })(),
+            websiteHostname: website.hostname,
+            createdAt: new Date(
+              website.lastPostCreatedAt || Date.now()
+            ).toISOString(),
             barColor: 'red',
             titleColor: 'red',
             bolded: true
@@ -217,18 +239,34 @@ const ActivityTables = memo(function ActivityTables() {
           title="Victory Board"
           subtitle="Successful community efforts"
           icon="🎉"
-          items={activityQuery.data.recentRemovals.map((removal) => ({
-            id: removal.id,
-            title: `${removal.companyName} removed`,
-            websiteHostname: removal.website.hostname,
-            createdAt: removal.createdAt,
-            barColor: 'green',
-            titleColor: 'green',
-            bolded: true
-          }))}
+          items={activityQuery.data.removalMilestones.map(
+            function mapRemovalMilestoneToActivityItem(milestone) {
+              const removedCompany = COMPANIES.find(
+                (company) => company.id === milestone.data.companyId
+              );
+              if (!removedCompany) {
+                console.error('Company not found for removal milestone', {
+                  milestone,
+                  companies: COMPANIES
+                });
+
+                throw new Error('Company not found for removal milestone');
+              }
+
+              return {
+                id: milestone.id,
+                title: `${removedCompany.name} removed`,
+                websiteHostname: milestone.website.hostname,
+                createdAt: new Date(milestone.createdAt).toISOString(),
+                barColor: 'green',
+                titleColor: 'green',
+                bolded: true
+              };
+            }
+          )}
           delayFactor={0.3}
           noItemsMessage="None yet"
-        /> */}
+        />
       </motion.div>
     </>
   );
@@ -377,17 +415,6 @@ function formatTimeAgo(dateString: string): string {
   } else {
     const months = Math.floor(diffInDays / 30);
     return `${months}m ago`;
-  }
-}
-
-function formatMilestoneType(type: string): string {
-  switch (type) {
-    case 'first-scan':
-      return '🔎 First scan';
-    case 'user-promoted-to-concerned':
-      return '🤝 New concerned user';
-    default:
-      return type;
   }
 }
 

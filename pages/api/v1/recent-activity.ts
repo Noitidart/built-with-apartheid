@@ -1,10 +1,17 @@
 import { buildIsCreatedAtAfterOrEqual } from '@/lib/date-fns';
 import { withPrisma } from '@/lib/prisma';
 import { isFirstScanInteraction } from '@/types/interaction';
-import type { TMilestone } from '@/types/milestone';
+import {
+  assertIsCompanyRemovedMilestones,
+  type TCompanyRemovedAndNoOthersMilestoneData,
+  type TCompanyRemovedButHasOthersMilestoneData,
+  type TMilestone
+} from '@/types/milestone';
 import type { TWebsite } from '@/types/website';
 import {
-  findManyWebsitesWithEngagement,
+  findHighActivityWebsitesWithEngagement,
+  findInactiveWebsitesWithEngagement,
+  findSoloWebsitesWithEngagement,
   type TWebsiteWithEngagement
 } from '@/types/website-with-engagment';
 import type { PrismaClient } from '@prisma/client';
@@ -25,6 +32,9 @@ export type TRecentActivityResponseData = {
     new: number;
   };
 
+  // If just 1 post say "✊ First outreach started"
+  // If new users say "🤝 X new voices joined!"
+  // Oterhwise say "🔄 Campaign growing X new posts"
   websitesWithPostStats: Array<
     Pick<TWebsite, 'id' | 'hostname'> & {
       posts7d: {
@@ -39,13 +49,15 @@ export type TRecentActivityResponseData = {
   >;
 
   removalMilestones: Array<
-    Pick<TMilestone, 'id' | 'createdAt' | 'data'> & {
+    Pick<TMilestone, 'id' | 'createdAt'> & {
+      data:
+        | TCompanyRemovedButHasOthersMilestoneData
+        | TCompanyRemovedAndNoOthersMilestoneData;
       website: Pick<TWebsite, 'hostname'>;
     }
   >;
 
-  // websites with high engagement that are EITHER infected or not infected
-  // websites with low engagement that are ONLY infected
+  // For spotlight rules see findManyWebsitesWithEngagement comments.
   spotlightedWebsites: TWebsiteWithEngagement[];
 };
 
@@ -238,32 +250,30 @@ async function getRecentActivityHandler(
       }
     }
   });
+  assertIsCompanyRemovedMilestones(removalMilestones);
 
-  // Build spotlightedWebsites.
-  // The oldest low effort activity is spotlighted, and the latest high effort activity is spotlighted.
-  // Find latest scan interactions for websites that are still infected
-  const websitesWithHighEngagment = await findManyWebsitesWithEngagement({
+  // Build spotlightedWebsites based on three engagement levels:
+  // solo, high, inactive (as described in engagement function comments)
+  const soloWebsites = await findSoloWebsitesWithEngagement({
     prisma,
     limit: 10,
-    sinceDate: sevenDaysAgo,
-    orderBy: 'engagement-score-high-to-low',
-    randomize: false,
-    infected: false,
-    filterByEngagement: 'high'
+    sinceDate: sevenDaysAgo
   });
-  const websitesWithLowEngagment = await findManyWebsitesWithEngagement({
+  const highEngagementWebsites = await findHighActivityWebsitesWithEngagement({
     prisma,
     limit: 10,
-    sinceDate: sevenDaysAgo,
-    orderBy: 'engagement-score-low-to-high',
-    randomize: true,
-    infected: true,
-    filterByEngagement: 'low'
+    sinceDate: sevenDaysAgo
+  });
+  const inactiveWebsites = await findInactiveWebsitesWithEngagement({
+    prisma,
+    limit: 10,
+    sinceDate: sevenDaysAgo
   });
 
   const spotlightedWebsites = [
-    ...websitesWithHighEngagment,
-    ...websitesWithLowEngagment
+    ...soloWebsites,
+    ...highEngagementWebsites,
+    ...inactiveWebsites
   ].slice(0, 10);
 
   return new Response(
