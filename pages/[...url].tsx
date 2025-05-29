@@ -240,9 +240,11 @@ function UrlPage() {
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Trusting to have Israel with your organization is unlike the
-                  above wisdom. Consider how Israel has historically treated its
-                  closest ally, the United States - extracting resources,
+                  Trusting to have Israeli tech on your website is trusting
+                  Israel to be your partner and ally. This is unsafe for every
+                  person in the organization, from owners to stakeholders to
+                  simple visitors. Consider how Israel has historically treated
+                  its closest ally, the United States - extracting resources,
                   intelligence, and financial support while offering
                   questionable returns.
                 </p>
