@@ -62,12 +62,12 @@ function StatsDisplay({
             🎯
           </span>
 
-          <span>{scans7d.total} sites scanned this week</span>
+          <span>{scans7d.total} scans this week</span>
         </div>
 
         <span className="hidden md:block">•</span>
 
-        <span>{scans7d.new} were new</span>
+        <span>{scans7d.new} new websites</span>
 
         <span className="hidden md:block text-gray-900 dark:text-gray-100">
           •
@@ -87,7 +87,7 @@ function StatsDisplay({
             👥
           </span>
 
-          <span>{uniquePosters7d.total} people took action</span>
+          <span>{uniquePosters7d.total} people reached out</span>
         </div>
 
         <span className="hidden md:block">•</span>
@@ -132,27 +132,27 @@ const ActivityTables = memo(function ActivityTables() {
         {header}
 
         <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-            >
-              <div className="animate-pulse">
-                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                <div className="space-y-3">
-                  {[1, 2, 3].map((j) => (
-                    <div
-                      key={j}
-                      className="h-4 bg-gray-200 dark:bg-gray-700 rounded"
-                    ></div>
-                  ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+              >
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((j) => (
+                      <div
+                        key={j}
+                        className="h-4 bg-gray-200 dark:bg-gray-700 rounded"
+                      ></div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
       </>
     );
   }
@@ -179,9 +179,9 @@ const ActivityTables = memo(function ActivityTables() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <ActivityTable
+        {/* <ActivityTable
           title="Recent Posts"
-          subtitle="Latest outreach efforts"
+          subtitle="People taking action for change"
           icon="💬"
           items={activityQuery.data.recentPosts.map((post) => ({
             id: post.id,
@@ -193,13 +193,13 @@ const ActivityTables = memo(function ActivityTables() {
             clamped: true
           }))}
           delayFactor={0.1}
-          noItemsMessage="No recent posts"
+          noItemsMessage="None yet"
         />
 
         <ActivityTable
-          title="Recent Detections"
-          subtitle="Newly found Israeli tech"
-          icon="⚠️"
+          title="Team Effort Spotlight"
+          subtitle="Campaigns making a difference"
+          icon="⭐"
           items={activityQuery.data.recentDetections.map((detection) => ({
             id: detection.id,
             title: detection.companyName,
@@ -210,11 +210,11 @@ const ActivityTables = memo(function ActivityTables() {
             bolded: true
           }))}
           delayFactor={0.2}
-          noItemsMessage="No recent detections"
+          noItemsMessage="No spotlights currently"
         />
 
         <ActivityTable
-          title="Recent Removals"
+          title="Victory Board"
           subtitle="Successful community efforts"
           icon="🎉"
           items={activityQuery.data.recentRemovals.map((removal) => ({
@@ -227,29 +227,10 @@ const ActivityTables = memo(function ActivityTables() {
             bolded: true
           }))}
           delayFactor={0.3}
-          noItemsMessage="No recent removals"
-        />
-
-        <ActivityTable
-          title="Community Milestones"
-          subtitle="First scans and new concerned users"
-          icon="🏆"
-          delayFactor={0.4}
-          className="md:col-span-2 lg:col-span-3"
-          gridClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          noItemsMessage="No recent milestones"
-          items={activityQuery.data.recentMilestones.map((milestone) => ({
-            id: milestone.id,
-            title: formatMilestoneType(milestone.type),
-            websiteHostname: milestone.website.hostname,
-            createdAt: milestone.createdAt,
-            barColor: 'purple',
-            titleColor: 'purple',
-            bolded: true
-          }))}
-        />
+          noItemsMessage="None yet"
+        /> */}
       </motion.div>
-    </div>
+    </>
   );
 });
 
@@ -288,12 +269,15 @@ function ActivityTable({
       <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
           <span className="mr-2">{icon}</span>
+
           {title}
         </h3>
+
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           {subtitle}
         </p>
       </div>
+
       <div className="p-4 sm:p-6">
         {items.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-sm">

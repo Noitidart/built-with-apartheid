@@ -1,4 +1,4 @@
-import type { TMilestone } from '@/types/milestone';
+import { isFirstScanMilestone, type TMilestone } from '@/types/milestone';
 import type { TPost } from '@/types/post';
 import type { TScan } from '@/types/scan';
 import type { Interaction } from '@prisma/client';
@@ -89,4 +89,10 @@ export function assertIsPostInteraction<
     console.error('This interaction does not have a user', { interaction });
     throw new Error('This interaction does not have a user. This is a bug.');
   }
+}
+
+export function isFirstScanInteraction(interaction: {
+  dataInteractionForMilestones: Array<Pick<TMilestone, 'data'>>;
+}) {
+  return interaction.dataInteractionForMilestones.some(isFirstScanMilestone);
 }
