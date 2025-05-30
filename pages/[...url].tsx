@@ -805,8 +805,17 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
 
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                We don&apos;t re-scan by default unless it&apos;s been over 7
-                days, as most likely nothing changed.
+                {data.didDenyForceScanAsWithinTenMinutesAgo ? (
+                  <>
+                    You tried to get a fresh scan, but the latest scan is less
+                    than 10 minutes ago so it was denied.
+                  </>
+                ) : (
+                  <>
+                    We don&apos;t re-scan by default unless it&apos;s been over
+                    7 days, as most likely nothing changed.
+                  </>
+                )}
               </p>
             </div>
 

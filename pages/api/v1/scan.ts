@@ -44,6 +44,7 @@ export const config = {
 
 type TScanResponseSuccessData = {
   _errors?: never;
+  didDenyForceScanAsWithinTenMinutesAgo?: boolean;
   isCached?: boolean;
   scanInteraction: TTimelineScanInteraction;
   website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
@@ -133,8 +134,22 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     assertIsScanInteraction(precedingScanInteraction);
   }
 
+  let shouldUndoForceScanAsWithinTenMinutesAgo = false;
+  // Check if trying to force a scan even though one exists 10min ago
+  if (force && precedingScanInteraction) {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const isPrecedingScanCreatedWithinTenMinutesAgo =
+      precedingScanInteraction.createdAt > tenMinutesAgo;
+    if (isPrecedingScanCreatedWithinTenMinutesAgo) {
+      shouldUndoForceScanAsWithinTenMinutesAgo = true;
+    }
+  }
+
   // Check if we can return cached scan
-  if (!force && precedingScanInteraction) {
+  if (
+    precedingScanInteraction &&
+    (!force || shouldUndoForceScanAsWithinTenMinutesAgo)
+  ) {
     const cacheWindowStart = new Date();
     cacheWindowStart.setDate(cacheWindowStart.getDate() - CACHE_WINDOW_DAYS);
 
@@ -146,6 +161,8 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
 
       return new Response(
         JSON.stringify({
+          didDenyForceScanAsWithinTenMinutesAgo:
+            shouldUndoForceScanAsWithinTenMinutesAgo,
           isCached: true,
           scanInteraction: precedingScanInteraction,
           website
