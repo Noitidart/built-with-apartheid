@@ -214,9 +214,9 @@ const ActivityTables = memo(function ActivityTables() {
             id: website.id,
             title: (function getSpotlightedWebsiteTitle() {
               if (website.engagementLevel === 'solo') {
-                return '🙏 1 person needs help RIGHT NOW';
+                return '🙏 1 person trying right now';
               } else if (website.engagementLevel === 'high') {
-                return `🔥 ${website.uniquePosterCount} people are looking for help`;
+                return `🔥 ${website.uniquePosterCount} people looking for help`;
               } else if (website.engagementLevel === 'inactive') {
                 return `📢 More voice needed`;
               } else {
