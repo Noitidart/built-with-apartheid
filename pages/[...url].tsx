@@ -1,6 +1,7 @@
 import ActivityTables from '@/components/ActivityTables';
 import CompanyList from '@/components/CompanyList';
 import Timeline from '@/components/Timeline';
+import WatchDialog from '@/components/WatchDialog';
 import type { CompanyId } from '@/constants/companies';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import { getCurrentUserId } from '@/utils/user-utils';
@@ -8,11 +9,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import classnames from 'classnames';
 import delay from 'delay';
+import { Bell } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,8 +35,8 @@ function UrlPage() {
     typeof router.query.url === 'string'
       ? router.query.url?.toLocaleLowerCase()
       : Array.isArray(router.query.url)
-      ? router.query.url.join('/').toLowerCase()
-      : undefined;
+        ? router.query.url.join('/').toLowerCase()
+        : undefined;
 
   const shouldScanBypassCache = useRef(false);
   const scanQuery = useQuery({
@@ -425,6 +427,7 @@ type ScanResultsProps = {
 };
 
 function ScanResults({ data, onForceScan }: ScanResultsProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const detectedCompanies = getDetectedCompanies(
     data.scanInteraction.scan.changes
   );
@@ -464,38 +467,62 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
       <div className="flex items-center mb-4">
         <div
           className={classnames(
-            'flex flex-col sm:flex-row sm:items-center',
+            // 'flex flex-col sm:flex-row sm:items-center sm:justify-between',
+            'flex justify-between grow',
             hasDetectedCompanies
               ? 'text-red-600 dark:text-red-400'
               : 'text-green-600 dark:text-green-400'
           )}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d={
-                hasDetectedCompanies
-                  ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-                  : 'M5 13l4 4L19 7'
-              }
-            />
-          </svg>
+          <div className="flex flex-col sm:flex-row sm:items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={
+                  hasDetectedCompanies
+                    ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                    : 'M5 13l4 4L19 7'
+                }
+              />
+            </svg>
 
-          <span className="text-xl font-bold">
-            {hasDetectedCompanies
-              ? 'Israeli Technology Detected'
-              : 'No Israeli Technologies Found'}
-          </span>
+            <span className="text-xl font-bold">
+              {hasDetectedCompanies
+                ? 'Israeli Technology Detected'
+                : 'No Israeli Technologies Found'}
+            </span>
+          </div>
+          {hasDetectedCompanies ? (
+            <button
+              onClick={() => setIsDialogOpen(true)}
+              className="ml-auto flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              Watch this site
+            </button>
+          ) : (
+            ''
+          )}
         </div>
       </div>
+
+      {isDialogOpen && (
+        <WatchDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          site={data.website.hostname}
+          currentEmail=""
+          isCurrentlyWatching={false}
+        />
+      )}
 
       <p className="text-base sm:text-lg mb-6">
         {hasDetectedCompanies

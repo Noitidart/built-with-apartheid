@@ -161,7 +161,8 @@ async function maybeCreatePromotedToConcernedUserMilestone(inputs: {
       milestone: {
         create: {
           websiteId: inputs.mostRecentPostInteraction.websiteId,
-          dataInteractionId: inputs.mostRecentPostInteraction.id,
+
+          // dataInteractionId: inputs.mostRecentPostInteraction.id,
           data: {
             type: 'user-promoted-to-concerned'
           }
