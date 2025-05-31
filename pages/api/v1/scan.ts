@@ -47,7 +47,6 @@ type TScanResponseSuccessData = {
     formErrors: string[];
     fieldErrors: Record<string, never>;
   };
-  didDenyForceScanAsWithinTenMinutesAgo?: boolean;
   isCached?: boolean;
   scanInteraction: TTimelineScanInteraction;
   website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
@@ -164,8 +163,10 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
 
       return new Response(
         JSON.stringify({
-          didDenyForceScanAsWithinTenMinutesAgo:
-            shouldUndoForceScanAsWithinTenMinutesAgo,
+          _errors: shouldUndoForceScanAsWithinTenMinutesAgo ? {
+            formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
+            fieldErrors: {}
+          } : undefined,
           isCached: true,
           scanInteraction: precedingScanInteraction,
           website

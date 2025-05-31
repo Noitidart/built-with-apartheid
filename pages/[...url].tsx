@@ -811,12 +811,11 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
 
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                {data._errors?.formErrors[0] ===
-                'websiteErrors.serviceUnavailable' ? (
+                {data._errors?.formErrors?.includes('websiteErrors.serviceUnavailable') ? (
                   <>
-                    The website is currently down. Please try again in a moment.
+                    The website is currently down. Please try again soon.
                   </>
-                ) : data.didDenyForceScanAsWithinTenMinutesAgo ? (
+                ) : data._errors?.formErrors?.includes('scanErrors.freshScanDeniedAsLastScanIsTooRecent') ? (
                   <>
                     You tried to get a fresh scan, but the latest scan is less
                     than 10 minutes ago so it was denied.
