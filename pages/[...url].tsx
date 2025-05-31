@@ -22,20 +22,9 @@ import classnames from 'classnames';
 import delay from 'delay';
 import { get } from 'lodash';
 import { AnimatePresence, motion } from 'motion/react';
-import { Geist, Geist_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin']
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin']
-});
 
 function UrlPage() {
   const router = useRouter();
@@ -165,13 +154,7 @@ function UrlPage() {
   };
 
   return (
-    <div
-      className={classnames(
-        geistSans.variable,
-        geistMono.variable,
-        'min-h-screen p-4 sm:p-8 pb-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100'
-      )}
-    >
+    <>
       <header className="w-full max-w-4xl mx-auto">
         <motion.h1
           className="text-4xl sm:text-6xl font-bold text-center mb-6"
@@ -357,7 +340,7 @@ function UrlPage() {
           </Link>
         </p>
       </footer>
-    </div>
+    </>
   );
 }
 
