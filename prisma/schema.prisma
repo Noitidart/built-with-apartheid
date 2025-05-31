@@ -22,6 +22,10 @@ model User {
   id        String   @id // nanoid from frontend
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  email     String?  @unique
+  isSubscribed Boolean @default(false)
+
+
 
   // Relations
   // (One-to-many) One user can have zero or many scans WHILE one scan belongs to exactly one user
@@ -30,12 +34,14 @@ model User {
   interactions Interaction[]
   // (One-to-many) One user can have zero or many posts WHILE one post belongs to exactly one user
   posts        Post[]
+  watchedSites Website[] @relation("WebsiteWatchers")
 }
 
 model Website {
   id        Int      @id @default(autoincrement())
   hostname  String   @unique // normalized by making it lowercase
   isMasjid  Boolean
+  isUnethical Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -48,6 +54,7 @@ model Website {
   posts        Post[]
   // (One-to-many) One website can have zero or many milestones WHILE one milestone belongs to exactly one website
   milestones   Milestone[]
+  watchers     User[] @relation("WebsiteWatchers")
 }
 
 model Scan {

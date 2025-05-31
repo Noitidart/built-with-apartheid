@@ -26,7 +26,28 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSave = async (email: string, site: string) => {
+  // const handleWatch = async () => {
+  //   try {
+  //     const response = await fetch('/api/watch-site', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         websiteId,
+  //         email: email.trim() || undefined
+  //       }),
+  //     });
+
+  //     if (response.ok) {
+  //       setIsWatching(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to watch site:', error);
+  //   }
+  // };
+
+  const tryEmailSend = async (email: string, site: string) => {
     // Handle save logic here
     try {
       const requestBody = {
@@ -37,18 +58,20 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
       console.log(requestBody);
       // const response = await axios.post('/api/v1/send-email', requestBody);
 
-      const response = await fetch('/api/send-email', {
+      const response = await fetch('/api/v1/send-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json' // Critical!
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
-
+      if (response.ok) {
+        alert('Email sent');
+      }
       // const data: any = response.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await response.json();
-      if (data?.success) alert('Email sent!');
+      // const data: any = await response.json(); // obj which as id as the email id
+
       // await sendUnethicalSiteAlert(email, email, site);
     } catch (error) {
       console.log(error);
@@ -190,7 +213,7 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
             Cancel
           </button>
           <button
-            onClick={() => handleSave(email, site)}
+            onClick={() => tryEmailSend(email, site)}
             disabled={
               (watchType === 'subscribed' || watchType === 'custom') &&
               !email?.includes('@')
