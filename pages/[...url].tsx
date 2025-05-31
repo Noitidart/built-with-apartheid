@@ -5,6 +5,10 @@ import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
 import type { CompanyId } from '@/constants/companies';
 import useForceRender from '@/hooks/useForceRender';
+import {
+  hasAnyFormError,
+  hasFormError
+} from '@/lib/response/response-error-utils';
 import { isNonNullish } from '@/lib/typescript';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import { getCurrentUserId } from '@/utils/user-utils';
@@ -811,33 +815,21 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
 
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                {data._errors?.formErrors?.includes('websiteErrors.serviceUnavailable') ? (
-                  <>
-                    The website is currently down. Please try again soon.
-                  </>
-                ) : data._errors?.formErrors?.includes('scanErrors.freshScanDeniedAsLastScanIsTooRecent') ? (
-                  <>
-                    You tried to get a fresh scan, but the latest scan is less
-                    than 10 minutes ago so it was denied.
-                  </>
-                ) : (
-                  <>
-                    We don&apos;t re-scan by default unless it&apos;s been over
-                    7 days, as most likely nothing changed.
-                  </>
-                )}
+                {hasFormError('websiteErrors.serviceUnavailable', data)
+                  ? 'The website is currently down. Please try again soon.'
+                  : hasFormError(
+                      'scanErrors.freshScanDeniedAsLastScanIsTooRecent',
+                      data
+                    )
+                  ? 'You tried to get a fresh scan, but the latest scan is less than 10 minutes ago so it was denied.'
+                  : "We don't re-scan by default unless it's been over 7 days, as most likely nothing changed."}
               </p>
             </div>
 
             <Button
               onClick={onForceScan}
               size="sm"
-              label={
-                data._errors?.formErrors[0] ===
-                'websiteErrors.serviceUnavailable'
-                  ? 'Try Again'
-                  : 'Fresh Scan'
-              }
+              label={hasAnyFormError(data) ? 'Try Again' : 'Fresh Scan'}
               className="whitespace-nowrap"
             />
           </div>

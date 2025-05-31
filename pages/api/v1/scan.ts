@@ -9,6 +9,7 @@ import {
 } from '@/constants/timeline';
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
+import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
@@ -42,17 +43,13 @@ export const config = {
   runtime: 'edge'
 };
 
-type TScanResponseSuccessData = {
-  _errors?: {
-    formErrors: string[];
-    fieldErrors: Record<string, never>;
-  };
+// In case of error WHILE cached scan exists, will fallback to display cached
+// scan ALONG WITH error. If no cached scan, then it just shows the error.
+export type TScanResponseData = TResponseDataWithErrors & {
   isCached?: boolean;
   scanInteraction: TTimelineScanInteraction;
   website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
 };
-
-export type TScanResponseData = TScanResponseSuccessData;
 
 const ScanRequestBodySchema = z.object({
   url: z.string().min(1, 'URL is required'),
@@ -163,10 +160,12 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
 
       return new Response(
         JSON.stringify({
-          _errors: shouldUndoForceScanAsWithinTenMinutesAgo ? {
-            formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
-            fieldErrors: {}
-          } : undefined,
+          _errors: shouldUndoForceScanAsWithinTenMinutesAgo
+            ? {
+                formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
+                fieldErrors: {}
+              }
+            : undefined,
           isCached: true,
           scanInteraction: precedingScanInteraction,
           website
