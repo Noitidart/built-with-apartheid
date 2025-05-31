@@ -471,6 +471,9 @@ function getScanErrorMessageAndRetryInfo({
         maxRetries: 2
       };
       break;
+    case 'websiteErrors.serviceUnavailable':
+      errorConfig = {};
+      break;
     default:
       console.error('Unhandled error key from scan error:', {
         errorKey
@@ -508,6 +511,9 @@ function getScanErrorMessageAndRetryInfo({
     case 'requestErrors.serviceUnavailable':
       firstSentenceOfMessage =
         'The scanning service we use is having temporary troubles.';
+      break;
+    case 'websiteErrors.serviceUnavailable':
+      firstSentenceOfMessage = 'The website is currently down.';
       break;
     default:
       return returnUnhandledError('errorKey to firstSentenceOfMessage');
@@ -805,7 +811,12 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
 
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                {data.didDenyForceScanAsWithinTenMinutesAgo ? (
+                {data._errors?.formErrors[0] ===
+                'websiteErrors.serviceUnavailable' ? (
+                  <>
+                    The website is currently down. Please try again in a moment.
+                  </>
+                ) : data.didDenyForceScanAsWithinTenMinutesAgo ? (
                   <>
                     You tried to get a fresh scan, but the latest scan is less
                     than 10 minutes ago so it was denied.
@@ -822,7 +833,12 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
             <Button
               onClick={onForceScan}
               size="sm"
-              label="Fresh Scan"
+              label={
+                data._errors?.formErrors[0] ===
+                'websiteErrors.serviceUnavailable'
+                  ? 'Try Again'
+                  : 'Fresh Scan'
+              }
               className="whitespace-nowrap"
             />
           </div>

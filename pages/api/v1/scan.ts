@@ -43,7 +43,10 @@ export const config = {
 };
 
 type TScanResponseSuccessData = {
-  _errors?: never;
+  _errors?: {
+    formErrors: string[];
+    fieldErrors: Record<string, never>;
+  };
   didDenyForceScanAsWithinTenMinutesAgo?: boolean;
   isCached?: boolean;
   scanInteraction: TTimelineScanInteraction;
@@ -178,6 +181,25 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     websiteHomepageHtml = await fetchHtml(homepageUrl);
   } catch (error) {
     if (error instanceof FetchHtmlError) {
+      // If network error and we have cached scan, fallback to cached version with error
+      if (
+        error.key === 'websiteErrors.serviceUnavailable' &&
+        precedingScanInteraction
+      ) {
+        return new Response(
+          JSON.stringify({
+            _errors: {
+              formErrors: ['websiteErrors.serviceUnavailable'],
+              fieldErrors: {}
+            },
+            isCached: true,
+            scanInteraction: precedingScanInteraction,
+            website
+          } satisfies TScanResponseData),
+          { status: 200 }
+        );
+      }
+
       return getFetchHtmlErrorResponse(error);
     }
 
@@ -320,7 +342,8 @@ function getFetchHtmlErrorResponse(error: FetchHtmlError): Response {
     'cfBrowserRendering.creationTimeout': 408,
     'requestErrors.networkError': 408,
     'requestErrors.rateLimitExceeded': 429,
-    'requestErrors.serviceUnavailable': 424
+    'requestErrors.serviceUnavailable': 424,
+    'websiteErrors.serviceUnavailable': 424
   };
 
   if (error.key in statusCodeMap === false) {
@@ -362,7 +385,8 @@ class FetchHtmlError extends Error {
       | 'cfBrowserRendering.creationTimeout'
       | 'requestErrors.networkError'
       | 'requestErrors.rateLimitExceeded'
-      | 'requestErrors.serviceUnavailable',
+      | 'requestErrors.serviceUnavailable'
+      | 'websiteErrors.serviceUnavailable',
     options?: { blockRetryForSeconds?: number }
   ) {
     super(key);
@@ -447,6 +471,8 @@ async function fetchHtml(url: string): Promise<string> {
       throw new FetchHtmlError('cfBrowserRendering.browserInterrupted');
     } else if (firstError?.message?.toLowerCase().includes('timeout')) {
       throw new FetchHtmlError('cfBrowserRendering.creationTimeout');
+    } else if (firstError?.code === 5006) {
+      throw new FetchHtmlError('websiteErrors.serviceUnavailable');
     } else {
       console.error('Unhandled Cloudflare Browser Rendering API error', {
         error: firstError
