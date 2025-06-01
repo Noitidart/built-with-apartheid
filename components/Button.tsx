@@ -2,7 +2,7 @@ import classnames from 'classnames';
 import { memo } from 'react';
 import Spinner from './Spinner';
 
-type TButtonProps = {
+export type TButtonProps = {
   label: React.ReactNode;
 
   /** (default: undefined) */

@@ -23,6 +23,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  // Auth fields - a user may have email but not yet an account.
+  // Having an account is signified by having a password.
+  email    String? @unique
+  password String?
+  isMod    Boolean @default(false)
+
   // Relations
   // (One-to-many) One user can have zero or many scans WHILE one scan belongs to exactly one user
   scans        Scan[]
