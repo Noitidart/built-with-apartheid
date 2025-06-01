@@ -1,3 +1,4 @@
+import Button from '@/components/Button';
 import { COMPANIES } from '@/constants/companies';
 import { assertNever } from '@/lib/typescript';
 import type {
@@ -311,13 +312,13 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
               disabled={isSubmitting}
             />
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                disabled={!postContent.trim() || isSubmitting}
-                className="text-sm sm:text-base px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-              >
-                {isSubmitting ? 'Posting...' : 'Post Anonymously'}
-              </button>
+                disabled={!postContent.trim()}
+                loading={isSubmitting}
+                label={isSubmitting ? 'Posting...' : 'Post Anonymously'}
+                className=""
+              />
             </div>
           </div>
         </form>
@@ -790,17 +791,29 @@ export function getUserAvatarInfo(
     const displayName = `${userType} User #${user.number}`;
 
     // Generate consistent colors based on user number and type
-    const colors = [
+    const curiousColors = [
       'bg-blue-500',
+      'bg-indigo-500',
+      'bg-cyan-500',
+      'bg-sky-500',
+      'bg-blue-600',
+      'bg-indigo-600',
+      'bg-cyan-600',
+      'bg-sky-600'
+    ];
+    
+    const concernedColors = [
       'bg-green-500',
       'bg-purple-500',
       'bg-red-500',
       'bg-yellow-500',
-      'bg-indigo-500',
       'bg-pink-500',
-      'bg-teal-500'
+      'bg-teal-500',
+      'bg-orange-500',
+      'bg-emerald-500'
     ];
 
+    const colors = user.type === 'curious' ? curiousColors : concernedColors;
     const baseIndex = (user.number - 1) % colors.length;
     const className = colors[baseIndex];
 

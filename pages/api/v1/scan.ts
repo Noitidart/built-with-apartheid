@@ -9,6 +9,7 @@ import {
 } from '@/constants/timeline';
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
+import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
@@ -42,7 +43,9 @@ export const config = {
   runtime: 'edge'
 };
 
-export type TScanResponseData = {
+// In case of error WHILE cached scan exists, will fallback to display cached
+// scan ALONG WITH error. If no cached scan, then it just shows the error.
+export type TScanResponseData = TResponseDataWithErrors & {
   isCached?: boolean;
   scanInteraction: TTimelineScanInteraction;
   website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
@@ -130,8 +133,22 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     assertIsScanInteraction(precedingScanInteraction);
   }
 
+  let shouldUndoForceScanAsWithinTenMinutesAgo = false;
+  // Check if trying to force a scan even though one exists 10min ago
+  if (force && precedingScanInteraction) {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const isPrecedingScanCreatedWithinTenMinutesAgo =
+      precedingScanInteraction.createdAt > tenMinutesAgo;
+    if (isPrecedingScanCreatedWithinTenMinutesAgo) {
+      shouldUndoForceScanAsWithinTenMinutesAgo = true;
+    }
+  }
+
   // Check if we can return cached scan
-  if (!force && precedingScanInteraction) {
+  if (
+    precedingScanInteraction &&
+    (!force || shouldUndoForceScanAsWithinTenMinutesAgo)
+  ) {
     const cacheWindowStart = new Date();
     cacheWindowStart.setDate(cacheWindowStart.getDate() - CACHE_WINDOW_DAYS);
 
@@ -143,6 +160,12 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
 
       return new Response(
         JSON.stringify({
+          _errors: shouldUndoForceScanAsWithinTenMinutesAgo
+            ? {
+                formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
+                fieldErrors: {}
+              }
+            : undefined,
           isCached: true,
           scanInteraction: precedingScanInteraction,
           website
@@ -153,7 +176,36 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
   }
 
   // Perform new scan
-  const websiteHomepageHtml = await fetchHtml(homepageUrl);
+  let websiteHomepageHtml: string;
+  try {
+    websiteHomepageHtml = await fetchHtml(homepageUrl);
+  } catch (error) {
+    if (error instanceof FetchHtmlError) {
+      // If network error and we have cached scan, fallback to cached version with error
+      if (
+        error.key === 'websiteErrors.serviceUnavailable' &&
+        precedingScanInteraction
+      ) {
+        return new Response(
+          JSON.stringify({
+            _errors: {
+              formErrors: ['websiteErrors.serviceUnavailable'],
+              fieldErrors: {}
+            },
+            isCached: true,
+            scanInteraction: precedingScanInteraction,
+            website
+          } satisfies TScanResponseData),
+          { status: 200 }
+        );
+      }
+
+      return getFetchHtmlErrorResponse(error);
+    }
+
+    throw error;
+  }
+
   const websiteHomepageHtmlLowerCase = websiteHomepageHtml.toLowerCase();
 
   const detectedCompanyIds: CompanyId[] = [];
@@ -276,6 +328,80 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
   );
 }
 
+function getFetchHtmlErrorResponse(error: FetchHtmlError): Response {
+  if (error instanceof FetchHtmlError === false) {
+    console.error('getFetchHtmlErrorResponse: Got non-FetchHtmlError', {
+      error
+    });
+
+    throw error;
+  }
+
+  const statusCodeMap: Record<FetchHtmlError['key'], number> = {
+    'cfBrowserRendering.browserInterrupted': 422,
+    'cfBrowserRendering.creationTimeout': 408,
+    'requestErrors.networkError': 408,
+    'requestErrors.rateLimitExceeded': 429,
+    'requestErrors.serviceUnavailable': 424,
+    'websiteErrors.serviceUnavailable': 424
+  };
+
+  if (error.key in statusCodeMap === false) {
+    console.error('getFetchHtmlErrorResponse: Got unknown error key', {
+      error
+    });
+
+    throw error;
+  }
+
+  const statusCode = statusCodeMap[error.key];
+
+  return new Response(
+    JSON.stringify({
+      _errors: {
+        formErrors: error.blockRetryUntilDate
+          ? [
+              [
+                error.key,
+                {
+                  blockRetryUntilDate: error.blockRetryUntilDate.toISOString()
+                }
+              ]
+            ]
+          : [error.key],
+        fieldErrors: {}
+      }
+    }),
+    { status: statusCode, headers: { 'Content-Type': 'application/json' } }
+  );
+}
+
+class FetchHtmlError extends Error {
+  public blockRetryUntilDate?: Date;
+
+  constructor(
+    public key:
+      | 'cfBrowserRendering.browserInterrupted'
+      | 'cfBrowserRendering.creationTimeout'
+      | 'requestErrors.networkError'
+      | 'requestErrors.rateLimitExceeded'
+      | 'requestErrors.serviceUnavailable'
+      | 'websiteErrors.serviceUnavailable',
+    options?: { blockRetryForSeconds?: number }
+  ) {
+    super(key);
+    this.name = 'FetchHtmlError';
+
+    if (options?.blockRetryForSeconds) {
+      this.blockRetryUntilDate = new Date(
+        Date.now() + options.blockRetryForSeconds * 1000
+      );
+    }
+  }
+}
+
+const DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER = 30;
+
 async function fetchHtml(url: string): Promise<string> {
   const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
   const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -284,27 +410,75 @@ async function fetchHtml(url: string): Promise<string> {
     throw new Error('Cloudflare API credentials not configured');
   }
 
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/content`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cfApiToken}`
-      },
-      body: JSON.stringify({ url })
-    }
-  );
+  let response;
+  try {
+    response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/content`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cfApiToken}`
+        },
+        body: JSON.stringify({ url })
+      }
+    );
+  } catch (error) {
+    console.error(
+      'Got network error when making request to Cloudflare Browser Rendering API',
+      { error }
+    );
+    // This is probably a network error on my server, not on Cloudflare Browser Rendering API server.
+    throw new FetchHtmlError('requestErrors.networkError');
+  }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Cloudflare API error: ${response.status} ${errorText}`);
+  if (response.status === 429) {
+    const retryAfterSecondsHeader = response.headers.get('Retry-After');
+    const retryAfterSeconds = retryAfterSecondsHeader
+      ? parseInt(retryAfterSecondsHeader)
+      : DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER;
+
+    throw new FetchHtmlError('requestErrors.rateLimitExceeded', {
+      blockRetryForSeconds: retryAfterSeconds
+    });
+  } else if (response.status >= 500) {
+    throw new FetchHtmlError('requestErrors.serviceUnavailable');
   }
 
   const result = (await response.json()) as TCloudflareBrowserRenderingResponse;
 
   if (!result.success) {
-    throw new Error(`Cloudflare API error: ${result.errors.join(', ')}`);
+    console.info(
+      'Failure response data from Cloudflare Browser Rendering API',
+      {
+        responseStatus: response.status,
+        result,
+        responseHeaders: Object.fromEntries(response.headers.entries())
+      }
+    );
+
+    // TODO: is looking at first error good enough?
+    const firstError = result.errors[0];
+
+    if (firstError?.code === 2001) {
+      throw new FetchHtmlError('requestErrors.rateLimitExceeded', {
+        blockRetryForSeconds:
+          DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER
+      });
+    } else if (
+      firstError?.message?.toLowerCase().includes('execution context')
+    ) {
+      throw new FetchHtmlError('cfBrowserRendering.browserInterrupted');
+    } else if (firstError?.message?.toLowerCase().includes('timeout')) {
+      throw new FetchHtmlError('cfBrowserRendering.creationTimeout');
+    } else if (firstError?.code === 5006) {
+      throw new FetchHtmlError('websiteErrors.serviceUnavailable');
+    } else {
+      console.error('Unhandled Cloudflare Browser Rendering API error', {
+        error: firstError
+      });
+      throw new Error('errors.unhandledError');
+    }
   }
 
   return result.result;

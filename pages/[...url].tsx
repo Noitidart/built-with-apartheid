@@ -1,30 +1,32 @@
 import ActivityTables from '@/components/ActivityTables';
+import Button from '@/components/Button';
 import CompanyList from '@/components/CompanyList';
+import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
 import WatchDialog from '@/components/WatchDialog';
 import type { CompanyId } from '@/constants/companies';
+import useForceRender from '@/hooks/useForceRender';
+import {
+  hasAnyFormError,
+  hasFormError
+} from '@/lib/response/response-error-utils';
+import { isNonNullish } from '@/lib/typescript';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import { getCurrentUserId } from '@/utils/user-utils';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useQueryClient,
+  type QueryObserverResult
+} from '@tanstack/react-query';
 import axios from 'axios';
 import classnames from 'classnames';
 import delay from 'delay';
+import { get } from 'lodash';
 import { Bell } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Geist, Geist_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin']
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin']
-});
 
 function UrlPage() {
   const router = useRouter();
@@ -49,7 +51,6 @@ function UrlPage() {
       const userId = getCurrentUserId();
 
       const force = shouldScanBypassCache.current;
-      shouldScanBypassCache.current = false;
 
       const [response] = await Promise.all([
         axios.post<TScanResponseData>('/api/v1/scan', {
@@ -61,6 +62,8 @@ function UrlPage() {
         // seconds so user can read it to see what just happened.
         delay(2000)
       ]);
+
+      shouldScanBypassCache.current = false;
 
       // Invalidate timeline query. As useTimelineQuery will refetch on mount if
       // stale. And while this was loading the <Timeline> was not rendered, so it
@@ -78,12 +81,27 @@ function UrlPage() {
     refetchOnReconnect: false,
     gcTime: 5000,
     staleTime: 0,
-    notifyOnChangeProps: ['data', 'status', 'error', 'isFetching']
+    // We show user-friendly error message to user after every retry, and we
+    // have manual way to retry which includes a countdown-based-auto-retry.
+    // Rather then the invisible auto-retry where the user has no idea the
+    // request is taking long due to retries.
+    retry: false,
+    notifyOnChangeProps: [
+      'data',
+      'status',
+      'error',
+      'isFetching',
+      'isSuccess',
+      'isError',
+      'errorUpdatedAt',
+      'errorUpdateCount'
+    ]
   });
 
-  const forceScan = async function forceScan() {
+  const forceScan = function forceScan() {
     shouldScanBypassCache.current = true;
-    scanQuery.refetch();
+    // So it resets the error count. As opposted to scanQuery.refetch
+    queryClient.resetQueries({ queryKey: ['scan', url] });
   };
 
   const shouldShowIntro = !router.isReady || !url;
@@ -108,6 +126,9 @@ function UrlPage() {
   ) {
     e.preventDefault();
 
+    // Use cache if available.
+    shouldScanBypassCache.current = false;
+
     const formData = new FormData(e.currentTarget);
     const urlValue = formData.get('url');
     if (typeof urlValue !== 'string') {
@@ -120,7 +141,8 @@ function UrlPage() {
       .toLowerCase();
 
     if (url && urlValueWithoutProtocol === url) {
-      scanQuery.refetch();
+      // So it resets the error count. As opposted to scanQuery.refetch
+      queryClient.resetQueries({ queryKey: ['scan', url] });
       return;
     }
 
@@ -134,13 +156,7 @@ function UrlPage() {
   };
 
   return (
-    <div
-      className={classnames(
-        geistSans.variable,
-        geistMono.variable,
-        'min-h-screen p-4 sm:p-8 pb-20 font-[family-name:var(--font-geist-sans)] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100'
-      )}
-    >
+    <>
       <header className="w-full max-w-4xl mx-auto">
         <motion.h1
           className="text-4xl sm:text-6xl font-bold text-center mb-6"
@@ -178,39 +194,12 @@ function UrlPage() {
                 required
               />
 
-              <button
+              <Button
                 type="submit"
-                disabled={scanQuery.isFetching}
-                className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium transition-colors flex items-center justify-center disabled:opacity-70"
-              >
-                {scanQuery.isFetching ? (
-                  <span className="inline-flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Scanning...
-                  </span>
-                ) : (
-                  'Scan Website'
-                )}
-              </button>
+                loading={scanQuery.isFetching}
+                size="md"
+                label={scanQuery.isFetching ? 'Scanning...' : 'Scan Website'}
+              />
             </div>
           </form>
         </div>
@@ -231,15 +220,6 @@ function UrlPage() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">
-                    Community Activity
-                  </h2>
-                  <p className="text-center text-gray-600 dark:text-gray-400">
-                    See what the community is discovering and join the effort to
-                    keep organizations secure
-                  </p>
-                </div>
                 <ActivityTables />
               </motion.div>
 
@@ -251,9 +231,11 @@ function UrlPage() {
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                  Trusting to have Israel with your organization is unlike the
-                  above wisdom. Consider how Israel has historically treated its
-                  closest ally, the United States - extracting resources,
+                  Trusting to have Israeli tech on your website is trusting
+                  Israel to be your partner and ally. This is unsafe for every
+                  person in the organization, from owners to stakeholders to
+                  simple visitors. Consider how Israel has historically treated
+                  its closest ally, the United States - extracting resources,
                   intelligence, and financial support while offering
                   questionable returns.
                 </p>
@@ -301,39 +283,19 @@ function UrlPage() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {scanQuery.isFetching && (
-            <motion.div
-              className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+          {scanQuery.isFetching && <ProgressiveLoading hostname={url || ''} />}
 
-              <p className="text-lg font-medium">
-                Analyzing website technologies...
-              </p>
-            </motion.div>
+          {scanQuery.isError && !scanQuery.isFetching && (
+            <ScanQueryErrorDisplay
+              error={scanQuery.error}
+              refetch={scanQuery.refetch}
+              errorUpdatedAt={scanQuery.errorUpdatedAt}
+              errorUpdateCount={scanQuery.errorUpdateCount}
+            />
           )}
 
-          {scanQuery.error && (
-            <motion.div
-              className="w-full p-6 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h3 className="text-xl font-medium mb-4 text-red-600 dark:text-red-400">
-                Error Scanning Website
-              </h3>
-
-              <p className="text-lg">{formatScanQueryError(scanQuery.error)}</p>
-            </motion.div>
-          )}
-
-          {scanQuery.data &&
+          {scanQuery.isSuccess &&
+            scanQuery.data &&
             // On refetch there is data, but it won't show spinner
             !scanQuery.isFetching && (
               <motion.div
@@ -355,7 +317,7 @@ function UrlPage() {
             )}
 
           {/* Timeline Component - Show after scan results */}
-          {scanQuery.data && !scanQuery.isFetching && (
+          {scanQuery.data && scanQuery.isSuccess && !scanQuery.isFetching && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -380,18 +342,223 @@ function UrlPage() {
           </Link>
         </p>
       </footer>
-    </div>
+    </>
   );
 }
 
-function formatScanQueryError(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const errorMessage =
-      error.response?.data?.error || 'An unhandled scan request error occurred';
-    return errorMessage;
-  } else {
-    return 'An unhandled error occurred';
+function formatDuration(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds}s`;
   }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (minutes < 60) {
+    return remainingSeconds > 0
+      ? `${minutes}m ${remainingSeconds}s`
+      : `${minutes}m`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  let result = `${hours}h`;
+  if (remainingMinutes > 0) {
+    result += ` ${remainingMinutes}m`;
+  }
+  if (remainingSeconds > 0 && hours === 0) {
+    result += ` ${remainingSeconds}s`;
+  }
+
+  return result;
+}
+
+function getScanErrorMessageAndRetryInfo({
+  error,
+  errorUpdatedAt,
+  errorUpdateCount
+}: {
+  error: unknown;
+  errorUpdatedAt: number;
+  errorUpdateCount: number;
+}): {
+  message: React.ReactNode;
+  autoRetryMessage?: string;
+  autoRetryAt?: number;
+  blockRetryUntil?: number;
+  attempts: number;
+  retries: number;
+  maxRetries?: number;
+} {
+  const now = Date.now();
+  const attempts = errorUpdateCount;
+  const retries = Math.max(attempts - 1, 0);
+
+  const returnUnhandledError = (step: string) => {
+    console.error('Unhandled error:', {
+      step,
+      error,
+      errorUpdatedAt,
+      errorUpdateCount
+    });
+    return {
+      message: 'An unexpected error occurred.',
+      attempts,
+      retries
+    };
+  };
+
+  if (!axios.isAxiosError(error)) {
+    return returnUnhandledError('axios.isAxiosError');
+  }
+
+  const firstFormError = get(error, 'response.data._errors.formErrors[0]');
+  let errorKey: string;
+  let errorMeta: Record<string, unknown> | null = null;
+  if (
+    Array.isArray(firstFormError) &&
+    typeof firstFormError[0] === 'string' &&
+    firstFormError[1] &&
+    typeof firstFormError[1] === 'object'
+  ) {
+    console.log('firstFormError:', firstFormError);
+    errorKey = firstFormError[0];
+    errorMeta = firstFormError[1];
+    console.log('errorMeta:', errorMeta);
+  } else if (typeof firstFormError === 'string') {
+    errorKey = firstFormError;
+  } else {
+    return returnUnhandledError('firstFormError');
+  }
+
+  const blockRetryUntilDate =
+    typeof errorMeta?.blockRetryUntilDate === 'string'
+      ? errorMeta.blockRetryUntilDate
+      : undefined;
+
+  let errorConfig: {
+    blockRetryUntilDate?: string;
+    autoRetrySecondsOrDate?: number | string;
+    maxRetries?: number;
+  };
+
+  switch (errorKey) {
+    case 'requestErrors.rateLimitExceeded':
+      console.log('requestErrors.rateLimitExceeded:', blockRetryUntilDate);
+      errorConfig = {
+        blockRetryUntilDate,
+        autoRetrySecondsOrDate: blockRetryUntilDate
+      };
+      break;
+    case 'cfBrowserRendering.browserInterrupted':
+    case 'cfBrowserRendering.creationTimeout':
+    case 'requestErrors.networkError':
+    case 'requestErrors.serviceUnavailable':
+      errorConfig = {
+        autoRetrySecondsOrDate: 5,
+        maxRetries: 2
+      };
+      break;
+    case 'websiteErrors.serviceUnavailable':
+      errorConfig = {};
+      break;
+    default:
+      console.error('Unhandled error key from scan error:', {
+        errorKey
+      });
+      return returnUnhandledError('errorKey to errorConfig');
+  }
+
+  let autoRetryAt: number | undefined;
+  if (
+    errorConfig.maxRetries === undefined ||
+    retries < errorConfig.maxRetries
+  ) {
+    if (typeof errorConfig.autoRetrySecondsOrDate === 'number') {
+      // its seconds
+      autoRetryAt = errorUpdatedAt + errorConfig.autoRetrySecondsOrDate * 1000;
+    } else if (typeof errorConfig.autoRetrySecondsOrDate === 'string') {
+      // its a date
+      autoRetryAt = new Date(errorConfig.autoRetrySecondsOrDate).getTime();
+    } // else there is no auto-retry for this error
+  }
+
+  let blockRetryUntil: number | undefined;
+  if (errorConfig.blockRetryUntilDate) {
+    blockRetryUntil = new Date(errorConfig.blockRetryUntilDate).getTime();
+  }
+
+  let firstSentenceOfMessage: string;
+  switch (errorKey) {
+    case 'requestErrors.rateLimitExceeded':
+      firstSentenceOfMessage = 'Too many people running scans right now.';
+      break;
+    case 'cfBrowserRendering.browserInterrupted':
+    case 'cfBrowserRendering.creationTimeout':
+    case 'requestErrors.networkError':
+    case 'requestErrors.serviceUnavailable':
+      firstSentenceOfMessage =
+        'The scanning service we use is having temporary troubles.';
+      break;
+    case 'websiteErrors.serviceUnavailable':
+      firstSentenceOfMessage = 'The website is currently down.';
+      break;
+    default:
+      return returnUnhandledError('errorKey to firstSentenceOfMessage');
+  }
+
+  let secondSentenceOfMessage: React.ReactNode;
+  if (blockRetryUntil) {
+    if (now < blockRetryUntil) {
+      secondSentenceOfMessage = (
+        <>
+          Please try again in{' '}
+          <strong className="font-semibold">
+            {formatDuration(Math.ceil((blockRetryUntil - now) / 1000))}
+          </strong>
+          .
+        </>
+      );
+    } else {
+      secondSentenceOfMessage = 'Please try again.';
+    }
+  } else if (autoRetryAt) {
+    if (now < autoRetryAt) {
+      secondSentenceOfMessage = 'Please try again in a moment.';
+    } else {
+      secondSentenceOfMessage = 'Automatically retrying now...';
+    }
+  } else {
+    secondSentenceOfMessage = 'Please try again in a moment.';
+  }
+
+  const message = (
+    <>
+      {firstSentenceOfMessage} {secondSentenceOfMessage}
+    </>
+  );
+
+  let autoRetryMessage: string | undefined;
+  if (autoRetryAt) {
+    if (now < autoRetryAt) {
+      autoRetryMessage = `Auto-retry in ${formatDuration(
+        Math.ceil((autoRetryAt - now) / 1000)
+      )}...`;
+    } else {
+      autoRetryMessage = 'Auto-retrying now...';
+    }
+  } // no auto-retry for this error
+
+  return {
+    message,
+    autoRetryMessage,
+    autoRetryAt,
+    blockRetryUntil,
+    attempts,
+    retries,
+    maxRetries: errorConfig.maxRetries
+  };
 }
 
 // Helper function to extract detected companies from companyStatusChanges
@@ -419,6 +586,191 @@ function formatScanAge(createdAt: Date): string {
   } else {
     return string + ' ago';
   }
+}
+
+type ProgressiveLoadingProps = {
+  hostname: string;
+};
+
+function ProgressiveLoading({ hostname }: ProgressiveLoadingProps) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [currentMessage, setCurrentMessage] = useState('Initializing scan...');
+
+  useEffect(function updateCounter() {
+    const interval = setInterval(function incrementSecond() {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+
+    return function cleanup() {
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(
+    function updateMessage() {
+      const laterMessages = [
+        'Peeking under the hood...',
+        'Following the digital breadcrumbs...',
+        'Scanning for tech fingerprints...',
+        "Investigating the website's DNA...",
+        'Almost cracked the code...',
+        'Just a few more moments...'
+      ];
+
+      if (elapsedSeconds < 2) {
+        setCurrentMessage('Starting up a dedicated web browser...');
+      } else if (elapsedSeconds < 6) {
+        setCurrentMessage(`Loading ${hostname}...`);
+      } else if (elapsedSeconds < 9) {
+        setCurrentMessage('Scanning technologies...');
+      } else if (elapsedSeconds < 12) {
+        setCurrentMessage('Reading between the lines of code...');
+      } else {
+        // Random rotation every 5 seconds after 12s
+        const rotationIndex = Math.floor((elapsedSeconds - 12) / 5);
+        const messageIndex = rotationIndex % laterMessages.length;
+        setCurrentMessage(laterMessages[messageIndex]);
+      }
+    },
+    [elapsedSeconds, hostname]
+  );
+
+  return (
+    <motion.div
+      className="w-full flex flex-col items-center justify-center p-4 sm:p-8 text-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Spinner size="lg" color="blue" className="mb-4" />
+
+      <p className="text-lg font-medium">
+        {currentMessage}
+
+        {/* Absolutely positioned so the change in number doesn't cause a layout shift */}
+        {elapsedSeconds > 0 && (
+          <span className="absolute">&nbsp;{elapsedSeconds}s</span>
+        )}
+      </p>
+    </motion.div>
+  );
+}
+
+type TScanQuery = QueryObserverResult<TScanResponseData, Error>;
+type TScanQueryErrorDisplayProps = Pick<
+  TScanQuery,
+  'error' | 'refetch' | 'errorUpdatedAt' | 'errorUpdateCount'
+>;
+
+function ScanQueryErrorDisplay(props: TScanQueryErrorDisplayProps) {
+  const { refetch } = props;
+  const errorInfo = getScanErrorMessageAndRetryInfo(props);
+  const forceRender = useForceRender();
+
+  useEffect(
+    function setupCountdownRerenderEverySecondOnCountdownConfigChange() {
+      const countdownEnds = [
+        errorInfo.autoRetryAt,
+        errorInfo.blockRetryUntil
+      ].filter(isNonNullish);
+
+      if (countdownEnds.length === 0) {
+        return;
+      }
+
+      let timeoutId: number | undefined;
+
+      const rerenderCountdownsNextWholeSecond =
+        function maybeSetupCountdownRerenders() {
+          const now = Date.now();
+          const hasActiveCountdowns = Math.max(...countdownEnds) > now;
+
+          if (!hasActiveCountdowns) {
+            return;
+          }
+
+          const millisUntilNextWholeSecond = 1000 - (now % 1000);
+
+          timeoutId = window.setTimeout(function rerenderCountdowns() {
+            forceRender();
+            maybeSetupCountdownRerenders();
+          }, millisUntilNextWholeSecond);
+        };
+
+      rerenderCountdownsNextWholeSecond();
+
+      return function clearCountdownRerenderEverySecondBeforeCountdownConfigChangeOrUnmount() {
+        window.clearTimeout(timeoutId);
+      };
+    },
+    [errorInfo.autoRetryAt, errorInfo.blockRetryUntil, forceRender]
+  );
+
+  useEffect(
+    function maybeSetupRefetchOnAutoRetryAtChange() {
+      if (!errorInfo.autoRetryAt) {
+        return;
+      }
+
+      const millisTillAutoRetry = Math.max(
+        errorInfo.autoRetryAt - Date.now(),
+        0
+      );
+      const interval = setInterval(function refetchOnAutoRetryAtChange() {
+        // We don't want to reset errorUpdateCount as we use that to determine if we hit max retries.
+        refetch();
+      }, millisTillAutoRetry);
+
+      return function clearRefetchOnAutoRetryAtChange() {
+        clearInterval(interval);
+      };
+    },
+    [errorInfo.autoRetryAt, refetch]
+  );
+
+  return (
+    <motion.div
+      className="w-full p-6 rounded-lg border bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h3 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
+        Scan Failed
+      </h3>
+
+      <p className="text-lg mb-4">{errorInfo.message}</p>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <Button
+          onClick={function refetchOnClick() {
+            // We don't want to reset errorUpdateCount as we use that to determine if we hit max retries.
+            refetch();
+          }}
+          type="button"
+          size="md"
+          label="Try Now"
+          // * "disabled:!opacity-35" - As we are on a red background, the
+          //   default disabled:opacity-70 doesn't look very disabled.
+          className="whitespace-nowrap disabled:!opacity-35"
+          disabled={
+            !!errorInfo.blockRetryUntil &&
+            errorInfo.blockRetryUntil > Date.now()
+          }
+        />
+
+        {errorInfo.autoRetryMessage && (
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <Spinner size="sm" color="currentColor" />
+
+            <span>{errorInfo.autoRetryMessage}</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
 }
 
 type ScanResultsProps = {
@@ -449,17 +801,23 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
               </p>
 
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                We don&apos;t re-scan by default unless it&apos;s been over 7
-                days, as most likely nothing changed.
+                {hasFormError('websiteErrors.serviceUnavailable', data)
+                  ? 'The website is currently down. Please try again soon.'
+                  : hasFormError(
+                        'scanErrors.freshScanDeniedAsLastScanIsTooRecent',
+                        data
+                      )
+                    ? 'You tried to get a fresh scan, but the latest scan is less than 10 minutes ago so it was denied.'
+                    : "We don't re-scan by default unless it's been over 7 days, as most likely nothing changed."}
               </p>
             </div>
 
-            <button
+            <Button
               onClick={onForceScan}
-              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors whitespace-nowrap"
-            >
-              Fresh Scan
-            </button>
+              size="sm"
+              label={hasAnyFormError(data) ? 'Try Again' : 'Fresh Scan'}
+              className="whitespace-nowrap"
+            />
           </div>
         </div>
       )}
