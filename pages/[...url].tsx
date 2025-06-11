@@ -13,6 +13,7 @@ import {
 import { isNonNullish } from '@/lib/typescript';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import { getCurrentUserId } from '@/utils/user-utils';
+import { User } from '@prisma/client';
 import {
   useQuery,
   useQueryClient,
@@ -780,10 +781,38 @@ type ScanResultsProps = {
 
 function ScanResults({ data, onForceScan }: ScanResultsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  console.log(user);
   const detectedCompanies = getDetectedCompanies(
     data.scanInteraction.scan.changes
   );
   const hasDetectedCompanies = detectedCompanies.length > 0;
+
+  const handleWatchDialog = async () => {
+    console.log('before handle watch dialog');
+    const userId = getCurrentUserId();
+    console.log(userId);
+    if (userId) {
+      // const user = await axios.get<User | null>(`/api/v1/users/${userId}`);
+      const response = await fetch(`/api/v1/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // setIsWatching(true);
+        // const data = await response.json();
+        // console.log(data);
+        setUser(await response.json());
+      } else setUser(null);
+
+      // setEmail(user?.email || currentEmail) ;
+    }
+
+    setIsDialogOpen(true);
+  };
 
   return (
     <>
@@ -860,7 +889,7 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
           </div>
           {hasDetectedCompanies ? (
             <button
-              onClick={() => setIsDialogOpen(true)}
+              onClick={() => handleWatchDialog()}
               className="ml-auto flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               <Bell className="w-4 h-4" />
@@ -877,7 +906,9 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           site={data.website.hostname}
-          currentEmail=""
+          siteId={data.website.id}
+          currentEmail={user?.email || ''}
+          // to do change to something dynamic
           isCurrentlyWatching={false}
         />
       )}

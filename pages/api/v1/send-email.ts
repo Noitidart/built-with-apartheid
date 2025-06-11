@@ -6,15 +6,18 @@ import { z } from 'zod';
 export const config = {
   runtime: 'edge'
 };
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const resend = new Resend(process.env.RESEND_API_KEY);
 
-const ScanRequestBodySchema = z.object({
-  siteUrl: z.string().min(1, 'URL is required'),
-  userEmail: z.string().min(3, 'Email is required'),
-  userName: z.string().min(1, 'User name is required')
+export const ScanRequestBodySchema = z.object({
+  siteUrl: z.string().min(1, 'URL is required').default('bad-site.org'),
+  userEmail: z
+    .string()
+    .min(3, 'Email is required')
+    .default('izughyer@gmail.com'),
+  userName: z.string().min(1, 'User name is required').default('curious user')
 });
 
-export default async function handleSendEmail(req: NextRequest) {
+export default async function handleSendSingleEmail(req: NextRequest) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405
@@ -52,22 +55,23 @@ export default async function handleSendEmail(req: NextRequest) {
   console.log('before sending email about ' + siteUrl + ' to ' + userEmail);
   // Send email
   try {
-    // await resend.emails.send({
-    //   from: 'ethics-alerts@yourdomain.com',
-    //   to: userEmail,
-    //   subject: `Ethics Alert: ${siteUrl} flagged`,
-    //   react: ApartheidEmailAlert({ siteUrl, userName })
-    // });
     const { data, error } = await resend.emails.send({
       from: 'Acme <onboarding@resend.dev>',
       to: userEmail,
-      subject: 'Hello world',
-      react: ApartheidEmailAlert({ siteUrl, userName })
+      subject: 'Monthly Apartheid Recap',
+      react: ApartheidEmailAlert({
+        siteUrl,
+        userName,
+        severityLevel: 'Critical',
+        vulnerabilityName: 'Israeli technology',
+        detectedTechnology: 'Israeli technology',
+        firstDetectedDate: new Date().toLocaleString(),
+        unsubscribeUrl: ''
+      })
     });
 
     if (error) {
       throw error;
-      // return res.status(400).json(error);
     }
     console.log('email id: ');
     console.log(data);
@@ -78,9 +82,5 @@ export default async function handleSendEmail(req: NextRequest) {
   } catch (error) {
     console.log(error);
     throw error;
-    // return NextResponse.json(
-    //   { error: 'Failed to send email' },
-    //   { status: 500 }
-    // );
   }
 }

@@ -11,9 +11,11 @@ import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
+
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
 import type { TWebsite } from '@/types/website';
+
 import type { PrismaClient } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -113,7 +115,8 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     select: {
       id: true,
       hostname: true,
-      isMasjid: true
+      isMasjid: true,
+      isUnethical: true
     }
   });
 
@@ -229,13 +232,34 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     websiteHomepageHtmlLowerCase.includes('islamic') ||
     websiteHomepageHtmlLowerCase.includes('pray');
 
+  let hasChanges = false;
+  const updatedData: { isMasjid?: boolean; isUnethical?: boolean } = {};
   // Update website isMasjid status if it changed
   if (isProbablyMasjid !== website.isMasjid) {
+    hasChanges = true;
+    updatedData.isMasjid = isProbablyMasjid;
+    // await prisma.website.update({
+    //   where: { id: website.id },
+    //   data: { isMasjid: isProbablyMasjid }
+    // });
+    // website.isMasjid = isProbablyMasjid;
+  }
+
+  if (
+    (detectedCompanyIds.length > 0 && !website.isUnethical) ||
+    (detectedCompanyIds.length == 0 && website.isUnethical)
+  ) {
+    hasChanges = true;
+    updatedData.isUnethical = !website.isUnethical;
+  }
+
+  if (hasChanges) {
     await prisma.website.update({
       where: { id: website.id },
-      data: { isMasjid: isProbablyMasjid }
+      data: updatedData
     });
-    website.isMasjid = isProbablyMasjid;
+    website.isMasjid = updatedData?.isMasjid || website.isMasjid;
+    website.isUnethical = updatedData?.isUnethical || website.isUnethical;
   }
 
   // Build changes for current scan

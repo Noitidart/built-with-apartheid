@@ -125,19 +125,19 @@ async function getRecentActivityHandler(
 
   const uniquePosters7d = {
     total: posters7dRaw.length,
-    new: posters7dRaw.filter(function isUsersFirstPostWithinLastSevenDays(
-      user
-    ) {
-      // If the user was selected in this query he must have at least one post
-      const firstPostEver = user.posts[0];
-      if (!firstPostEver) {
-        throw new Error(
-          'Impossible unless dev messed up the posters query to select users that do not have posts'
-        );
-      }
+    new: posters7dRaw.filter(
+      function isUsersFirstPostWithinLastSevenDays(user) {
+        // If the user was selected in this query he must have at least one post
+        const firstPostEver = user.posts[0];
+        if (!firstPostEver) {
+          throw new Error(
+            'Impossible unless dev messed up the posters query to select users that do not have posts'
+          );
+        }
 
-      return isCreatedAtWithinLastSevenDays(firstPostEver);
-    }).length
+        return isCreatedAtWithinLastSevenDays(firstPostEver);
+      }
+    ).length
   };
 
   // Build websitesWithPosts7d
@@ -186,37 +186,37 @@ async function getRecentActivityHandler(
   });
 
   const websitesWithPostStats: TRecentActivityResponseData['websitesWithPostStats'] =
-    recentWebsitesWithPostsRaw.map(function toRecentWebsiteWithPosts(
-      rawWebsiteWithPosts
-    ) {
-      const posts7d = rawWebsiteWithPosts.posts.length;
+    recentWebsitesWithPostsRaw.map(
+      function toRecentWebsiteWithPosts(rawWebsiteWithPosts) {
+        const posts7d = rawWebsiteWithPosts.posts.length;
 
-      const userIds7d = new Set(
-        rawWebsiteWithPosts.posts.map((post) => post.userId)
-      );
-
-      const latestPostCreatedAt =
-        rawWebsiteWithPosts.posts[0]?.createdAt.toISOString();
-      if (!latestPostCreatedAt) {
-        throw new Error(
-          'Impossible unless dev messed up the posts query to select websites that do not have posts'
+        const userIds7d = new Set(
+          rawWebsiteWithPosts.posts.map((post) => post.userId)
         );
-      }
 
-      return {
-        id: rawWebsiteWithPosts.id,
-        hostname: rawWebsiteWithPosts.hostname,
-        posts7d: {
-          total: posts7d
-        },
-        users7d: {
-          total: userIds7d.size,
-          // Because we only select interactions that are user-promoted-to-concerned milestones.
-          new: rawWebsiteWithPosts.interactions.length
-        },
-        latestPostCreatedAt
-      };
-    });
+        const latestPostCreatedAt =
+          rawWebsiteWithPosts.posts[0]?.createdAt.toISOString();
+        if (!latestPostCreatedAt) {
+          throw new Error(
+            'Impossible unless dev messed up the posts query to select websites that do not have posts'
+          );
+        }
+
+        return {
+          id: rawWebsiteWithPosts.id,
+          hostname: rawWebsiteWithPosts.hostname,
+          posts7d: {
+            total: posts7d
+          },
+          users7d: {
+            total: userIds7d.size,
+            // Because we only select interactions that are user-promoted-to-concerned milestones.
+            new: rawWebsiteWithPosts.interactions.length
+          },
+          latestPostCreatedAt
+        };
+      }
+    );
 
   const removalMilestones = await prisma.milestone.findMany({
     where: {

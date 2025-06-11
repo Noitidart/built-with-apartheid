@@ -1,21 +1,19 @@
-// lib/email.ts
-'use server';
-// file for testing purposes primarily
+// utils/email.ts
 import { ApartheidEmailAlert } from '@/components/ApartheidEmailAlert';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function sendUnethicalSiteAlert(
+export async function tryEmailSend(
   userEmail: string,
-  userName: string,
-  siteUrl: string
+  siteUrl: string,
+  userName: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const { data, error } = await resend.emails.send({
+      from: 'Acme <onboarding@resend.dev>',
       to: userEmail,
-      subject: `Ethics Alert: ${siteUrl} flagged`,
+      subject: 'Monthly Apartheid Recap',
       react: ApartheidEmailAlert({
         siteUrl,
         userName,
@@ -26,11 +24,17 @@ export async function sendUnethicalSiteAlert(
         unsubscribeUrl: ''
       })
     });
+    if (error) {
+      throw error;
+    }
+    console.log('email id: ');
+    console.log(data);
+
+    return new Response(JSON.stringify({ data }), {
+      status: 200
+    });
   } catch (error) {
-    console.error(
-      `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,
-      error
-    );
-    // Implement retry logic or store failed attempts
+    console.error('Email failed:', error);
+    throw error;
   }
 }

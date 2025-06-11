@@ -1,14 +1,18 @@
 // pages/api/watch-site.ts
 import { withPrisma } from '@/lib/prisma';
-import { getCurrentUserId } from '@/utils/user-utils';
+
 import { PrismaClient } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
+export const config = {
+  runtime: 'edge'
+};
+
 const ScanRequestBodySchema = z.object({
   email: z.string().min(1, 'email is required'),
-
-  websiteId: z.string().min(1, 'Website ID is required')
+  userId: z.string().min(1, 'user id is required'),
+  websiteId: z.number().min(0, 'website id is required')
 });
 
 export async function watchSiteHandler(prisma: PrismaClient, req: NextRequest) {
@@ -19,7 +23,9 @@ export async function watchSiteHandler(prisma: PrismaClient, req: NextRequest) {
   }
 
   // Get userId from your existing system
-  const userId = getCurrentUserId();
+  // console.log('in function watchsite');
+  // const userId = getCurrentUserId();
+
   let unknownBody;
   try {
     unknownBody = await req.json();
@@ -43,7 +49,7 @@ export async function watchSiteHandler(prisma: PrismaClient, req: NextRequest) {
   }
   const body = result.data;
 
-  const { email, websiteId } = body;
+  const { email, websiteId, userId } = body;
   //   const { email, websiteId } = req.body;
 
   // Validate website exists

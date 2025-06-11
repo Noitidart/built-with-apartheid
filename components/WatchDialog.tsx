@@ -1,4 +1,6 @@
 'use client';
+
+import { getCurrentUserId } from '@/utils/user-utils';
 // import axios from 'axios';
 // import { sendUnethicalSiteAlert } from '@/lib/email';
 import { Bell, BellOff, Mail, Shield, X } from 'lucide-react';
@@ -8,15 +10,44 @@ interface WatchDialogProps {
   isOpen: boolean;
   onClose: () => void;
   site: string;
+  siteId: number;
   currentEmail: string;
   isCurrentlyWatching: boolean;
 }
+
+export const tryEmailSend = async (email: string, site: string) => {
+  // Handle save logic here
+  try {
+    const requestBody = {
+      userEmail: email,
+      userName: 'Test User',
+      siteUrl: site
+    };
+    console.log(requestBody);
+    // const response = await axios.post('/api/v1/send-email', requestBody);
+
+    const response = await fetch('/api/v1/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    if (response.ok) {
+      alert('Email sent'); // to do replace with better alert
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const WatchDialog: React.FC<WatchDialogProps> = ({
   isOpen,
   onClose,
   site,
+  siteId,
   currentEmail = '',
+  // to do implement passing this in dynamically
   isCurrentlyWatching = false
 }) => {
   const [watchType, setWatchType] = useState(
@@ -26,62 +57,38 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
 
   if (!isOpen) return null;
 
-  // const handleWatch = async () => {
-  //   try {
-  //     const response = await fetch('/api/watch-site', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         websiteId,
-  //         email: email.trim() || undefined
-  //       }),
-  //     });
+  const handleWatch = async (websiteId: number) => {
+    // to review, having these as strings prob increases errors
+    if (watchType === 'subscribed') {
+      try {
+        const userId = getCurrentUserId();
+        console.log(userId);
+        const response = await fetch('/api/v1/watch-site', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            websiteId,
+            userId,
+            email: email.trim() || undefined
+          })
+        });
 
-  //     if (response.ok) {
-  //       setIsWatching(true);
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to watch site:', error);
-  //   }
-  // };
+        if (response.ok) {
+          alert('saved');
+          onClose();
 
-  const tryEmailSend = async (email: string, site: string) => {
-    // Handle save logic here
-    try {
-      const requestBody = {
-        userEmail: email,
-        userName: 'Test User',
-        siteUrl: site
-      };
-      console.log(requestBody);
-      // const response = await axios.post('/api/v1/send-email', requestBody);
-
-      const response = await fetch('/api/v1/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-      if (response.ok) {
-        alert('Email sent');
+          // setIsWatching(true);
+        } else alert('something went wrong');
+      } catch (error) {
+        console.error('Failed to watch site:', error);
+        alert('Failed to watch site');
       }
-      // const data: any = response.data;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // const data: any = await response.json(); // obj which as id as the email id
-
-      // await sendUnethicalSiteAlert(email, email, site);
-    } catch (error) {
-      console.log(error);
+    } else if (watchType == 'not-subscribed') {
+      // to do implement unwatching
+      alert('not implemented');
     }
-    console.log('Saving watch settings:', {
-      watchType,
-      email,
-      siteName: site
-    });
-    onClose();
   };
 
   return (
@@ -213,7 +220,7 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
             Cancel
           </button>
           <button
-            onClick={() => tryEmailSend(email, site)}
+            onClick={() => handleWatch(siteId)}
             disabled={
               (watchType === 'subscribed' || watchType === 'custom') &&
               !email?.includes('@')

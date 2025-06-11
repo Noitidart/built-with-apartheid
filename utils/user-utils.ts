@@ -12,6 +12,10 @@ export const userNanoidGenerator = customAlphabet(
  * Uses localStorage with sessionStorage fallback for maximum persistence.
  */
 export function getCurrentUserId(): string {
+  if (typeof window === 'undefined') {
+    throw new Error('Storage APIs unavailable outside browser');
+  }
+
   const USER_ID_KEY = 'built-with-apartheid-user-id';
 
   // Try to get from localStorage first

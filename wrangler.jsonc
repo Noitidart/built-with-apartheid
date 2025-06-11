@@ -11,6 +11,11 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    // "crons": ["0 0 1 * *"] // Monthly schedule for sending emails
+    // "crons": ["*/2 * * * *"] // every 2 minutes
+    "crons": ["*/30 * * * *"] // every 30 minutes
+  },
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
