@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id // nanoid from frontend
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Auth fields - a user may have email but not yet an account.
+  // Having an account is signified by having a password.
+  email    String? @unique
+  password String?
+  isMod    Boolean @default(false)
+
+  // Relations
+  // (One-to-many-required) One user can have zero or many scans WHILE one scan belongs to exactly one user
+  scans        Scan[]
+  // (One-to-many-optional) One user can have zero or many interactions WHILE one interaction can belong to zero or one user
+  interactions Interaction[]
+  // (One-to-many-required) One user can have zero or many posts WHILE one post belongs to exactly one user
+  posts        Post[]
+}
+
+model Website {
+  id        Int      @id @default(autoincrement())
+  hostname  String   @unique // normalized by making it lowercase
+  isMasjid  Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  // (One-to-many-required) One website can have zero or many scans WHILE one scan belongs to exactly one website
+  scans        Scan[]
+  // (One-to-many-optional) One website can have zero or many interactions WHILE one interaction can belong to zero or one website
+  interactions Interaction[]
+  // (One-to-many-required) One website can have zero or many posts WHILE one post belongs to exactly one website
+  posts        Post[]
+  // (One-to-many-optional) One website can have zero or many milestones WHILE one milestone can belong to zero or one website
+  milestones   Milestone[]
+}
+
+model Scan {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  /// [TCompanyStatusChanges]
+  changes Json
+
+  // Relations
+  // (One-to-many-required) One scan belongs to exactly one user WHILE a user can have zero or many scans
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // (One-to-many-required) One scan belongs to exactly one website WHILE a website can have zero or many scans
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int
+
+  // (One-to-one) One scan belongs to exactly one interaction WHILE an interaction can have zero or one scan
+  interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interactionId Int         @unique
+}
+
+model Interaction {
+  id        Int             @id @default(autoincrement())
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @default(now()) @updatedAt
+  type      InteractionType
+  userIp    String?
+
+  // Relations
+  // (One-to-many-optional) One interaction can belong to zero or one user WHILE a user can have zero or many interactions
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+
+  // (One-to-many-optional) One interaction can belong to zero or one website WHILE a website can have zero or many interactions
+  // Note: MOD_ADDED and MOD_REMOVED interaction types do not have an associated website
+  website   Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int?
+
+  // (One-to-one) One interaction can have zero or one scan WHILE a scan belongs to exactly one interaction
+  scan Scan?
+
+  // (One-to-one) One interaction can have zero or one milestone WHILE a milestone belongs to exactly one interaction
+  milestone Milestone? @relation("MilestoneInteraction")
+
+  // (One-to-many-required) One interaction can have zero or many milestone data interactions WHILE a milestone data interaction belongs to exactly one interaction
+  // Note: Only human interactions (non-"MILESTONE type" interactions) can be the interaction referred to by milestone.dataInteraction.
+  // Note: Is many because one scan can detect multiple companies, which means two milestones with milestone.data.type of "company-added".
+  dataInteractionForMilestones Milestone[] @relation("MilestoneDataInteraction")
+
+  // (One-to-one) One interaction can have zero or one post WHILE a post belongs to exactly one interaction
+  post Post?
+}
+
+enum InteractionType {
+  SCAN
+  POST
+  MILESTONE
+  MOD_ADDED
+  MOD_REMOVED
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  body      String
+
+  // Relations
+  // (One-to-many-required) One post belongs to exactly one user WHILE a user can have zero or many posts
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // (One-to-many-required) One post belongs to exactly one website WHILE a website can have zero or many posts
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int
+
+  // (One-to-one) One post belongs to exactly one interaction WHILE an interaction can have zero or one post
+  interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interactionId Int         @unique
+}
+
+model Milestone {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  /// [TMilestoneData]
+  data      Json
+
+  // Relations
+  // (One-to-many-optional) One milestone can belong to zero or one website WHILE a website can have zero or many milestones
+  // Note: MOD_* interaction types do not have an associated website (though no MOD_* milestones are planned)
+  website   Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int?
+
+  // (One-to-one) One milestone belongs to exactly one interaction WHILE an interaction can have zero or one milestone
+  interaction   Interaction @relation("MilestoneInteraction", fields: [interactionId], references: [id], onDelete: Cascade)
+  interactionId Int         @unique
+
+  // (One-to-many-required) One milestone data belongs to exactly one interaction WHILE an interaction can have zero or many milestone data
+  dataInteraction   Interaction @relation("MilestoneDataInteraction", fields: [dataInteractionId], references: [id], onDelete: Cascade)
+  dataInteractionId Int
+}

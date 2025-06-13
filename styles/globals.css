@@ -1,15 +1,10 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,7 +15,21 @@
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/**
+ * Underline-SVG utils - SVG's are not underlined by default, this fixes that.
+ */
+@layer utilities {
+  .underline-svg {
+    @apply relative;
+    @apply before:content-[''] before:block before:w-full before:h-[1px] before:bg-current before:absolute before:bottom-[2px] before:left-0;
+  }
+
+  .underline-svg-offset-3 {
+    @apply before:bottom-[1px];
+  }
 }
