@@ -2,10 +2,14 @@ import type { TMe } from '@/types/user';
 import type { PrismaClient } from '@prisma/client';
 import { SignJWT, jwtVerify } from 'jose';
 import { customAlphabet } from 'nanoid';
-import type { GetServerSidePropsContext, NextApiRequest, NextApiResponse } from 'next';
+import type {
+  GetServerSidePropsContext,
+  NextApiRequest,
+  NextApiResponse
+} from 'next';
 
-// JWT token expiration (1 minute for testing)
-const USER_TOKEN_JWT_MAX_AGE_SECONDS = 1 * 60;
+// JWT token expiration (1 day)
+const USER_TOKEN_JWT_MAX_AGE_SECONDS = 24 * 60 * 60;
 
 // Cookie persists for 1 year to preserve user ID even when JWT expires.
 // Browser max is 400 days, so we extend on each request for persistence.
@@ -393,7 +397,9 @@ export async function setTokenCookie(
   response.setHeader('Set-Cookie', cookieString);
 }
 
-export async function deleteTokenCookie(response: NextApiResponse | GetServerSidePropsContext['res']) {
+export async function deleteTokenCookie(
+  response: NextApiResponse | GetServerSidePropsContext['res']
+) {
   const options = getTokenCookieOptions();
   const cookieString = [
     `${USER_TOKEN_COOKIE_NAME}=`,
@@ -405,6 +411,6 @@ export async function deleteTokenCookie(response: NextApiResponse | GetServerSid
   ]
     .filter(Boolean)
     .join('; ');
-    
+
   response.setHeader('Set-Cookie', cookieString);
 }
