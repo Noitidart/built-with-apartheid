@@ -2,14 +2,9 @@ import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import type { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-
-export const config = {
-  runtime: 'edge'
-};
 
 export type TRemoveModResponseData =
   | Record<string, never>
@@ -25,68 +20,44 @@ const BODY_SCHEMA = z.object({
 
 const removeModHandler = withPrisma(async function removeModHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   console.log('removeModHandler', req.method);
   if (req.method !== 'POST') {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      },
-      { status: 405 }
-    );
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    });
   }
-
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
 
   const me = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response
+    response: res
   });
 
   // Check if user is authenticated and is a moderator
   if (!me.isAuthenticated || !me.isMod) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.unauthorized'],
-          fieldErrors: {}
-        }
-      },
-      { status: 401 }
-    );
+    return res.status(401).json({
+      _errors: {
+        formErrors: ['requestErrors.unauthorized'],
+        fieldErrors: {}
+      }
+    });
   }
 
   // Parse request body
-  let unknownBody;
-  try {
-    unknownBody = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.invalidBody'],
-          fieldErrors: {}
-        }
-      },
-      { status: 400 }
-    );
-  }
+  const unknownBody = req.body;
 
   const result = BODY_SCHEMA.safeParse(unknownBody);
   if (!result.success) {
-    return NextResponse.json(
-      {
-        error: 'Invalid request data',
-        details: result.error.flatten().fieldErrors
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      error: 'Invalid request data',
+      details: result.error.flatten().fieldErrors
+    });
   }
 
   const { userId } = result.data;
@@ -98,19 +69,16 @@ const removeModHandler = withPrisma(async function removeModHandler(
   });
 
   if (!userToRemove) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return res.status(404).json({ error: 'User not found' });
   }
 
   if (!userToRemove.isMod) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['modErrors.userNotMod'],
-          fieldErrors: {}
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['modErrors.userNotMod'],
+        fieldErrors: {}
+      }
+    });
   }
 
   // Update user to remove mod status
@@ -129,7 +97,7 @@ const removeModHandler = withPrisma(async function removeModHandler(
     }
   });
 
-  return updateNextResponseJson(response, {}, { status: 201 });
+  return res.status(201).json({});
 });
 
 export default removeModHandler;

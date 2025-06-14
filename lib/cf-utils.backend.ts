@@ -1,19 +1,24 @@
+import type { NextApiRequest } from 'next';
+
 // Helper to get client IP from request
-export function getRequestIp(request: Request): string | null {
+export function getRequestIp(request: NextApiRequest): string | null {
   // Check various headers for the real IP
-  const forwarded = request.headers.get('x-forwarded-for');
+  const headers = request.headers;
+  
+  const forwarded = headers['x-forwarded-for'];
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    const forwardedStr = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    return forwardedStr.split(',')[0].trim();
   }
 
-  const realIp = request.headers.get('x-real-ip');
+  const realIp = headers['x-real-ip'];
   if (realIp) {
-    return realIp;
+    return Array.isArray(realIp) ? realIp[0] : realIp;
   }
 
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  const cfConnectingIp = headers['cf-connecting-ip'];
   if (cfConnectingIp) {
-    return cfConnectingIp;
+    return Array.isArray(cfConnectingIp) ? cfConnectingIp[0] : cfConnectingIp;
   }
 
   return null;

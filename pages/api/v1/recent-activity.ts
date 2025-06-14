@@ -16,11 +16,7 @@ import {
 } from '@/types/website-with-engagment';
 import type { PrismaClient } from '@prisma/client';
 import { sub } from 'date-fns';
-import type { NextRequest } from 'next/server';
-
-export const config = {
-  runtime: 'edge'
-};
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export type TRecentActivityResponseData = {
   scans7d: {
@@ -63,12 +59,11 @@ export type TRecentActivityResponseData = {
 
 async function getRecentActivityHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const sevenDaysAgo = sub(new Date(), { days: 7 });
@@ -276,21 +271,13 @@ async function getRecentActivityHandler(
     ...inactiveWebsites
   ].slice(0, 10);
 
-  return new Response(
-    JSON.stringify({
-      scans7d,
-      uniquePosters7d,
-      websitesWithPostStats,
-      removalMilestones,
-      spotlightedWebsites
-    } satisfies TRecentActivityResponseData),
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }
-  );
+  return res.status(200).json({
+    scans7d,
+    uniquePosters7d,
+    websitesWithPostStats,
+    removalMilestones,
+    spotlightedWebsites
+  } satisfies TRecentActivityResponseData);
 }
 
 export default withPrisma(getRecentActivityHandler);

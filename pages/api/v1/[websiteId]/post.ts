@@ -1,19 +1,14 @@
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import {
   assertIsPostInteraction,
   type TPostInteraction
 } from '@/types/interaction';
 import type { TPost } from '@/types/post';
 import type { PrismaClient } from '@prisma/client';
-import { type NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-
-export const config = {
-  runtime: 'edge'
-};
 
 const querySchema = z.object({
   websiteId: z.string().transform(Number)
@@ -35,75 +30,51 @@ export type TPostResponseData = {
 
 const newPostHandler = withPrisma(async function newPostHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      },
-      { status: 405 }
-    );
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    });
   }
 
-  const query = Object.fromEntries(req.nextUrl.searchParams);
+  const query = req.query;
 
-  let unknownBody;
-  try {
-    unknownBody = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.invalidBody'],
-          fieldErrors: {}
-        }
-      },
-      { status: 400 }
-    );
-  }
+  const unknownBody = req.body;
 
   const queryResult = querySchema.safeParse(query);
 
   if (!queryResult.success) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: queryResult.error.flatten().fieldErrors
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: queryResult.error.flatten().fieldErrors
+      }
+    });
   }
 
   const { websiteId } = queryResult.data;
 
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
-
   const me = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response
+    response: res
   });
   const userId = me.id;
 
   const bodyResult = bodySchema.safeParse(unknownBody);
 
   if (!bodyResult.success) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: bodyResult.error.flatten().fieldErrors
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: bodyResult.error.flatten().fieldErrors
+      }
+    });
   }
 
   const { body: content } = bodyResult.data;
@@ -117,15 +88,12 @@ const newPostHandler = withPrisma(async function newPostHandler(
   });
 
   if (!website) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.notFound'],
-          fieldErrors: { websiteId: ['requestErrors.notFound'] }
-        }
-      },
-      { status: 404 }
-    );
+    return res.status(404).json({
+      _errors: {
+        formErrors: ['requestErrors.notFound'],
+        fieldErrors: { websiteId: ['requestErrors.notFound'] }
+      }
+    });
   }
 
   const interaction = await prisma.interaction.create({
@@ -157,9 +125,7 @@ const newPostHandler = withPrisma(async function newPostHandler(
     mostRecentPostInteraction: interaction
   });
 
-  return updateNextResponseJson(response, { me } satisfies TPostResponseData, {
-    status: 201
-  });
+  return res.status(201).json({ me } satisfies TPostResponseData);
 });
 
 async function maybeCreatePromotedToConcernedUserMilestone(inputs: {

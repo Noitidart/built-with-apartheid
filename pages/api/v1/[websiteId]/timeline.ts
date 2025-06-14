@@ -1,7 +1,6 @@
 import { COMPANIES, type CompanyId } from '@/constants/companies';
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { withPrisma } from '@/lib/prisma';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import { assertNever } from '@/lib/typescript';
 import type { TInteraction } from '@/types/interaction';
 import type { TMilestone } from '@/types/milestone';
@@ -9,12 +8,8 @@ import type { TScan } from '@/types/scan';
 import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
 import type { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-
-export const config = {
-  runtime: 'edge'
-};
 
 const querySchema = z.object({
   websiteId: z.string().transform(Number)
@@ -111,34 +106,28 @@ export type TTimelineResponseData = {
 
 const getTimelineHandler = withPrisma(async function getTimelineHandler(
   prisma: PrismaClient,
-  request: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
-  if (request.method !== 'GET') {
-    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const query = Object.fromEntries(request.nextUrl.searchParams);
-  const result = querySchema.safeParse(query);
+  const result = querySchema.safeParse(req.query);
   if (!result.success) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: result.error.flatten().fieldErrors
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: result.error.flatten().fieldErrors
+      }
+    });
   }
   const { websiteId } = result.data;
 
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
-
   const me = await getMeFromRefreshedToken({
     prisma,
-    request,
-    response
+    request: req,
+    response: res
   });
   const userId = me.id;
 
@@ -408,7 +397,7 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
     .slice()
     .reverse();
 
-  return updateNextResponseJson(response, {
+  return res.status(200).json({
     interactions: transformedInteractions,
     companies: buildTimelineCompanies({
       timelineInteractionsByOldestFirst

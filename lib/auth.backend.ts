@@ -2,8 +2,7 @@ import type { TMe } from '@/types/user';
 import type { PrismaClient } from '@prisma/client';
 import { SignJWT, jwtVerify } from 'jose';
 import { customAlphabet } from 'nanoid';
-import type { GetServerSidePropsContext } from 'next';
-import { NextRequest, NextResponse } from 'next/server';
+import type { GetServerSidePropsContext, NextApiRequest, NextApiResponse } from 'next';
 
 // JWT token expiration (1 minute for testing)
 const USER_TOKEN_JWT_MAX_AGE_SECONDS = 1 * 60;
@@ -227,17 +226,10 @@ export async function createToken(payload: TJwtPayload) {
 }
 
 export function getTokenFromRequest(
-  request: NextRequest | GetServerSidePropsContext['req']
+  request: NextApiRequest | GetServerSidePropsContext['req']
 ): string | null {
-  if (request instanceof NextRequest) {
-    // NextRequest (API routes)
-    return request.cookies.get(USER_TOKEN_COOKIE_NAME)?.value || null;
-  } else {
-    // IncomingMessage (SSR context.req)
-
-    // Next.js adds an additional `cookies` object to the request - https://nextjs.org/docs/pages/api-reference/functions/get-server-side-props
-    return request.cookies[USER_TOKEN_COOKIE_NAME] || null;
-  }
+  // Next.js adds an additional `cookies` object to the request - https://nextjs.org/docs/pages/api-reference/functions/get-server-side-props
+  return request.cookies[USER_TOKEN_COOKIE_NAME] || null;
 }
 
 /**
@@ -261,8 +253,8 @@ export function getTokenFromRequest(
  */
 export async function getMeFromRefreshedToken(inputs: {
   prisma: PrismaClient;
-  request: NextRequest | GetServerSidePropsContext['req'];
-  response: NextResponse | GetServerSidePropsContext['res'];
+  request: NextApiRequest | GetServerSidePropsContext['req'];
+  response: NextApiResponse | GetServerSidePropsContext['res'];
 }): Promise<TMe> {
   let userId: string;
   let isAuthenticated = false;
@@ -363,11 +355,13 @@ export async function getMeFromRefreshedToken(inputs: {
   };
 }
 
-type SetCookieParams = Extract<
-  Parameters<NextResponse['cookies']['set']>,
-  [key: string, value: string, cookie?: unknown]
->;
-type SetCookieOptions = NonNullable<SetCookieParams[2]>;
+type SetCookieOptions = {
+  httpOnly: boolean;
+  path: string;
+  sameSite: 'strict' | 'lax' | 'none';
+  secure: boolean;
+};
+
 function getTokenCookieOptions(): SetCookieOptions {
   return {
     httpOnly: true,
@@ -378,37 +372,39 @@ function getTokenCookieOptions(): SetCookieOptions {
 }
 
 export async function setTokenCookie(
-  response: NextResponse | GetServerSidePropsContext['res'],
+  response: NextApiResponse | GetServerSidePropsContext['res'],
   payload: TJwtPayload
 ) {
   const token = await createToken(payload);
 
   const options = getTokenCookieOptions();
 
-  if (response instanceof NextResponse) {
-    response.cookies.set(USER_TOKEN_COOKIE_NAME, token, {
-      ...options,
-      maxAge: USER_TOKEN_COOKIE_MAX_AGE_SECONDS
-    });
-  } else {
-    const cookieString = [
-      `${USER_TOKEN_COOKIE_NAME}=${token}`,
-      `Max-Age=${USER_TOKEN_COOKIE_MAX_AGE_SECONDS}`,
-      `Path=${options.path}`,
-      `SameSite=${options.sameSite}`,
-      options.httpOnly && 'HttpOnly',
-      options.secure && 'Secure'
-    ]
-      .filter(Boolean)
-      .join('; ');
+  const cookieString = [
+    `${USER_TOKEN_COOKIE_NAME}=${token}`,
+    `Max-Age=${USER_TOKEN_COOKIE_MAX_AGE_SECONDS}`,
+    `Path=${options.path}`,
+    `SameSite=${options.sameSite}`,
+    options.httpOnly && 'HttpOnly',
+    options.secure && 'Secure'
+  ]
+    .filter(Boolean)
+    .join('; ');
 
-    response.setHeader('Set-Cookie', cookieString);
-  }
+  response.setHeader('Set-Cookie', cookieString);
 }
 
-export async function deleteTokenCookie(response: NextResponse) {
-  response.cookies.set(USER_TOKEN_COOKIE_NAME, '', {
-    ...getTokenCookieOptions(),
-    maxAge: 0
-  });
+export async function deleteTokenCookie(response: NextApiResponse | GetServerSidePropsContext['res']) {
+  const options = getTokenCookieOptions();
+  const cookieString = [
+    `${USER_TOKEN_COOKIE_NAME}=`,
+    `Max-Age=0`,
+    `Path=${options.path}`,
+    `SameSite=${options.sameSite}`,
+    options.httpOnly && 'HttpOnly',
+    options.secure && 'Secure'
+  ]
+    .filter(Boolean)
+    .join('; ');
+    
+  response.setHeader('Set-Cookie', cookieString);
 }

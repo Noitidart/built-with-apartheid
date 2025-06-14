@@ -6,14 +6,9 @@ import {
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import type { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-
-export const config = {
-  runtime: 'edge'
-};
 
 export type TAddModResponseData =
   | Record<string, never>
@@ -31,69 +26,46 @@ const BODY_SCHEMA = z.object({
 
 const addModHandler = withPrisma(async function addModHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      },
-      { status: 405 }
-    );
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    });
   }
 
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
 
   const me = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response
+    response: res
   });
 
   // Check if user is authenticated and is a moderator
   if (!me.isAuthenticated || !me.isMod) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.unauthorized'],
-          fieldErrors: {}
-        }
-      },
-      { status: 401 }
-    );
+    return res.status(401).json({
+      _errors: {
+        formErrors: ['requestErrors.unauthorized'],
+        fieldErrors: {}
+      }
+    });
   }
 
   // Parse request body
-  let unknownBody;
-  try {
-    unknownBody = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.invalidBody'],
-          fieldErrors: {}
-        }
-      },
-      { status: 400 }
-    );
-  }
+  const unknownBody = req.body;
 
   const result = BODY_SCHEMA.safeParse(unknownBody);
   if (!result.success) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: result.error.flatten().fieldErrors
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: result.error.flatten().fieldErrors
+      }
+    });
   }
 
   const { email, password } = result.data;
@@ -105,15 +77,12 @@ const addModHandler = withPrisma(async function addModHandler(
 
   if (existingUser) {
     if (existingUser.isMod) {
-      return NextResponse.json(
-        {
-          _errors: {
-            formErrors: ['modErrors.userAlreadyMod'],
-            fieldErrors: {}
-          }
-        },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        _errors: {
+          formErrors: ['modErrors.userAlreadyMod'],
+          fieldErrors: {}
+        }
+      });
     }
     // If user exists but is not a mod, we'll update them
   }
@@ -151,7 +120,7 @@ const addModHandler = withPrisma(async function addModHandler(
     }
   });
 
-  return updateNextResponseJson(response, {}, { status: 201 });
+  return res.status(201).json({});
 });
 
 export default addModHandler;

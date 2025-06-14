@@ -7,14 +7,13 @@ import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { getRequestIp } from '@/lib/cf-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
 import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
 import type { Prisma, PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
 const CACHE_WINDOW_DAYS = 7;
@@ -62,9 +61,6 @@ type TCloudflareBrowserRenderingResponse =
   | TCloudflareBrowserRenderingSuccessResponse
   | TCloudflareBrowserRenderingErrorResponse;
 
-export const config = {
-  runtime: 'edge'
-};
 
 // In case of error WHILE cached scan exists, will fallback to display cached
 // scan ALONG WITH error. If no cached scan, then it just shows the error.
@@ -87,58 +83,37 @@ export type TScanRequestBody = z.infer<typeof SCAN_REQUEST_BODY_SCHEMA>;
 
 const newScanHandler = withPrisma(async function newScanHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      },
-      { status: 405 }
-    );
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    });
   }
 
-  let unknownBody;
-  try {
-    unknownBody = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.invalidBody'],
-          fieldErrors: {}
-        }
-      },
-      { status: 400 }
-    );
-  }
+  const unknownBody = req.body;
 
   const result = SCAN_REQUEST_BODY_SCHEMA.safeParse(unknownBody);
   if (!result.success) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: result.error.flatten().fieldErrors
-        }
-      },
-      { status: 400 }
-    );
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: result.error.flatten().fieldErrors
+      }
+    });
   }
   const body = result.data;
 
   const { url, force } = body;
 
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
-
   const me = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response
+    response: res
   });
   const userId = me.id;
 
@@ -202,7 +177,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
       // Yes, we can use the cached scan as it is within the cache window and we
       // aren't forcing a scan.
 
-      return updateNextResponseJson(response, {
+      return res.status(200).json({
         _errors: shouldUndoForceScanAsWithinTenMinutesAgo
           ? {
               formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
@@ -228,7 +203,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
         error.key === 'websiteErrors.serviceUnavailable' &&
         precedingScanInteraction
       ) {
-        return updateNextResponseJson(response, {
+        return res.status(200).json({
           _errors: {
             formErrors: ['websiteErrors.serviceUnavailable'],
             fieldErrors: {}
@@ -240,7 +215,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
         } satisfies TScanResponseData);
       }
 
-      return getFetchHtmlErrorResponse(error);
+      return sendFetchHtmlErrorResponse(res, error);
     }
 
     throw error;
@@ -354,7 +329,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
     })
   ]);
 
-  return updateNextResponseJson(response, {
+  return res.status(200).json({
     isCached: false,
     scanInteraction,
     website,
@@ -362,7 +337,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
   } satisfies TScanResponseData);
 });
 
-function getFetchHtmlErrorResponse(error: FetchHtmlError): Response {
+function sendFetchHtmlErrorResponse(res: NextApiResponse, error: FetchHtmlError): void {
   if (error instanceof FetchHtmlError === false) {
     console.error('getFetchHtmlErrorResponse: Got non-FetchHtmlError', {
       error
@@ -390,24 +365,21 @@ function getFetchHtmlErrorResponse(error: FetchHtmlError): Response {
 
   const statusCode = statusCodeMap[error.key];
 
-  return new Response(
-    JSON.stringify({
-      _errors: {
-        formErrors: error.blockRetryUntilDate
-          ? [
-              [
-                error.key,
-                {
-                  blockRetryUntilDate: error.blockRetryUntilDate.toISOString()
-                }
-              ]
+  res.status(statusCode).json({
+    _errors: {
+      formErrors: error.blockRetryUntilDate
+        ? [
+            [
+              error.key,
+              {
+                blockRetryUntilDate: error.blockRetryUntilDate.toISOString()
+              }
             ]
-          : [error.key],
-        fieldErrors: {}
-      }
-    }),
-    { status: statusCode, headers: { 'Content-Type': 'application/json' } }
-  );
+          ]
+        : [error.key],
+      fieldErrors: {}
+    }
+  });
 }
 
 class FetchHtmlError extends Error {

@@ -7,13 +7,8 @@ import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import type { TMe } from '@/types/user';
 import type { PrismaClient } from '@prisma/client';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-
-export const config = {
-  runtime: 'edge'
-};
 
 export type TLoginRequestBody = {
   email: string;
@@ -30,50 +25,31 @@ type TLoginResponseData =
   | (TResponseDataWithErrors & { success: false });
 
 const loginHandler = withPrisma(async function loginHandler(
-  prisma,
-  req: NextRequest
+  prisma: PrismaClient,
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return NextResponse.json(
-      {
-        success: false,
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      } satisfies TLoginResponseData,
-      { status: 405 }
-    );
+    return res.status(405).json({
+      success: false,
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    } satisfies TLoginResponseData);
   }
 
-  let rawBody;
-  try {
-    rawBody = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        success: false,
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: {}
-        }
-      } satisfies TLoginResponseData,
-      { status: 400 }
-    );
-  }
+  const rawBody = req.body;
 
   const bodyParseResult = loginRequestBodySchema.safeParse(rawBody);
   if (!bodyParseResult.success) {
-    return NextResponse.json(
-      {
-        success: false,
-        _errors: {
-          formErrors: ['requestErrors.badRequest'],
-          fieldErrors: bodyParseResult.error.flatten().fieldErrors
-        }
-      } satisfies TLoginResponseData,
-      { status: 400 }
-    );
+    return res.status(400).json({
+      success: false,
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: bodyParseResult.error.flatten().fieldErrors
+      }
+    } satisfies TLoginResponseData);
   }
 
   const body = bodyParseResult.data;
@@ -89,16 +65,13 @@ const loginHandler = withPrisma(async function loginHandler(
   });
 
   if (!user || !user.password) {
-    return NextResponse.json(
-      {
-        success: false,
-        _errors: {
-          formErrors: ['authErrors.invalidCredentials'],
-          fieldErrors: {}
-        }
-      } satisfies TLoginResponseData,
-      { status: 401 }
-    );
+    return res.status(401).json({
+      success: false,
+      _errors: {
+        formErrors: ['authErrors.invalidCredentials'],
+        fieldErrors: {}
+      }
+    } satisfies TLoginResponseData);
   }
 
   const isValidPassword = await verifyPassword({
@@ -106,24 +79,20 @@ const loginHandler = withPrisma(async function loginHandler(
     hashedPassword: user.password
   });
   if (!isValidPassword) {
-    return NextResponse.json(
-      {
-        success: false,
-        _errors: {
-          formErrors: ['authErrors.invalidCredentials'],
-          fieldErrors: {}
-        }
-      } satisfies TLoginResponseData,
-      { status: 401 }
-    );
+    return res.status(401).json({
+      success: false,
+      _errors: {
+        formErrors: ['authErrors.invalidCredentials'],
+        fieldErrors: {}
+      }
+    } satisfies TLoginResponseData);
   }
 
-  // Create a temporary response to check for anonymous user
-  const tempResponse = NextResponse.json({});
+  // Check for anonymous user
   const currentMe = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response: tempResponse
+    response: res
   });
 
   // If there's a current anonymous user and the logging in user is different, merge them
@@ -142,21 +111,16 @@ const loginHandler = withPrisma(async function loginHandler(
     isAuthenticated: true
   };
 
-  const response = NextResponse.json(
-    {
-      success: true,
-      me
-    } satisfies TLoginResponseData,
-    { status: 200 }
-  );
-
   // Set authentication cookie
-  await setTokenCookie(response, {
+  await setTokenCookie(res, {
     userId: me.id,
     isAuthenticated: me.isAuthenticated
   });
 
-  return response;
+  return res.status(200).json({
+    success: true,
+    me
+  } satisfies TLoginResponseData);
 });
 
 async function mergeAnonymousUserToAuthenticatedUser(inputs: {

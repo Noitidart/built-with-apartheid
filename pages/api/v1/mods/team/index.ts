@@ -1,13 +1,8 @@
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
-import { updateNextResponseJson } from '@/lib/response/response-utils';
 import type { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
-
-export const config = {
-  runtime: 'edge'
-};
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export type TGetModsResponseData =
   | { mods: Array<{ id: string; email: string }> }
@@ -15,39 +10,31 @@ export type TGetModsResponseData =
 
 const getModsHandler = withPrisma(async function getModsHandler(
   prisma: PrismaClient,
-  req: NextRequest
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
   if (req.method !== 'GET') {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.methodNotAllowed'],
-          fieldErrors: {}
-        }
-      },
-      { status: 405 }
-    );
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
+      }
+    });
   }
-
-  // Create response early so getMeFromRefreshedToken can set cookies
-  const response = NextResponse.json({});
 
   const me = await getMeFromRefreshedToken({
     prisma,
     request: req,
-    response
+    response: res
   });
 
   if (!me.isAuthenticated || !me.isMod) {
-    return NextResponse.json(
-      {
-        _errors: {
-          formErrors: ['requestErrors.unauthorized'],
-          fieldErrors: {}
-        }
-      },
-      { status: 401 }
-    );
+    return res.status(401).json({
+      _errors: {
+        formErrors: ['requestErrors.unauthorized'],
+        fieldErrors: {}
+      }
+    });
   }
 
   const mods = await prisma.user.findMany({
@@ -65,7 +52,7 @@ const getModsHandler = withPrisma(async function getModsHandler(
     }
   });
 
-  return updateNextResponseJson(response, { mods }, { status: 200 });
+  return res.status(200).json({ mods });
 });
 
 export default getModsHandler;

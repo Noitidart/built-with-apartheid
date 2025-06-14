@@ -5,7 +5,6 @@ import { getLoginLayoutServerSideProps } from '@/lib/login-layout.backend';
 import type { TMe } from '@/types/user';
 import Link from 'next/link';
 
-export const runtime = 'experimental-edge';
 
 export const getServerSideProps = getLoginLayoutServerSideProps;
 
