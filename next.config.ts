@@ -1,8 +1,13 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: true,
+  serverExternalPackages: [
+    '@prisma/adapter-neon',
+    '@prisma/client',
+    '.prisma/client'
+  ]
 };
 
 export default nextConfig;
