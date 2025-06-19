@@ -2,6 +2,7 @@ export async function onRequest() {
   console.log('Cron job executed at:', new Date().toISOString());
 
   try {
+    // to do change to something dynamic
     const response = await fetch(
       'http://localhost:3000/api/v1/trigger-monthly-email',
       {

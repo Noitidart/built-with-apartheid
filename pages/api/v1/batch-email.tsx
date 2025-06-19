@@ -15,12 +15,13 @@ export default async function handler(
   console.log('in batch email');
   console.log(recipients, siteUrl);
 
+  // to do add more specific props, number of active users, scans, changes, etc to send in email
   const promises = recipients.map(({ email, userName }) =>
     resend.emails.send({
       // from: 'Acme <onboarding@resend.dev>',
       from: 'BWA <builtWithApartheid@resend.dev>',
       to: email,
-      subject: 'Monthly Apartheid Recap',
+      subject: 'Monthly Apartheid Recap', // to do change this to more specific thing
       react: ApartheidEmailAlert({
         siteUrl,
         userName,
