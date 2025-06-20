@@ -1,5 +1,6 @@
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { getOrCreateIp } from '@/lib/ip-utils.backend';
+import { getKeyValue, setKeyValue } from '@/lib/kv';
 import { withPrisma } from '@/lib/prisma';
 import {
   assertIsPostInteraction,
@@ -66,6 +67,33 @@ const newPostHandler = withPrisma(async function newPostHandler(
   });
   const userId = me.id;
 
+  const rateLimitKey = `retry-post-after:${userId}`;
+  // Check rate limit
+  {
+    const retryAfterDate = await getKeyValue<string>(rateLimitKey);
+
+    if (retryAfterDate) {
+      const retryTime = new Date(retryAfterDate).getTime();
+      const now = Date.now();
+
+      if (now < retryTime) {
+        const retryAfterSeconds = Math.ceil((retryTime - now) / 1000);
+        res.setHeader('Retry-After', retryAfterSeconds.toString());
+        return res.status(429).json({
+          _errors: {
+            formErrors: [
+              [
+                'requestErrors.rateLimitExceeded',
+                { retryAfter: retryAfterDate }
+              ]
+            ],
+            fieldErrors: {}
+          }
+        });
+      }
+    }
+  }
+
   // Get or create IP for the user
   const userIp = await getOrCreateIp(prisma, req, userId);
 
@@ -127,6 +155,15 @@ const newPostHandler = withPrisma(async function newPostHandler(
     prisma,
     mostRecentPostInteraction: interaction
   });
+
+  // Set rate limit for next post
+  {
+    const cooldownSeconds = 60;
+    const retryAfterDate = new Date(
+      Date.now() + cooldownSeconds * 1000
+    ).toISOString();
+    await setKeyValue(rateLimitKey, retryAfterDate, { ttl: cooldownSeconds });
+  }
 
   return res.status(201).json({ me } satisfies TPostResponseData);
 });

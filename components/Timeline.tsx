@@ -20,11 +20,50 @@ import type { TWebsite } from '@/types/website';
 import axios from 'axios';
 import classnames from 'classnames';
 import { AnimatePresence, motion } from 'motion/react';
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 type TimelineProps = {
   website: Pick<TWebsite, 'id'>;
 };
+
+function useRateLimitCountdown() {
+  const [rateLimitError, setRateLimitError] = useState<
+    [string, { retryAfter: string }] | null
+  >(null);
+  const [countdown, setCountdown] = useState<number>(0);
+
+  useEffect(
+    function updateCountdownOnRateLimitChange() {
+      if (!rateLimitError) {
+        setCountdown(0);
+        return;
+      }
+
+      const retryAfterDate = new Date(rateLimitError[1].retryAfter);
+
+      function updateCountdown() {
+        const now = Date.now();
+        const remaining = Math.max(
+          0,
+          Math.ceil((retryAfterDate.getTime() - now) / 1000)
+        );
+        setCountdown(remaining);
+
+        if (remaining === 0) {
+          setRateLimitError(null);
+        }
+      }
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+
+      return () => clearInterval(interval);
+    },
+    [rateLimitError]
+  );
+
+  return { countdown, rateLimitError, setRateLimitError };
+}
 
 function Timeline({ website }: TimelineProps) {
   const timelineQuery = useTimelineQuery(website.id);
@@ -241,6 +280,8 @@ function PostForm({
 }: PostFormProps) {
   const [postContent, setPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { countdown, rateLimitError, setRateLimitError } =
+    useRateLimitCountdown();
 
   const submitPost = async function submitPost(e: React.FormEvent) {
     e.preventDefault();
@@ -256,9 +297,25 @@ function PostForm({
       await refetchTimelineQuery();
 
       setPostContent('');
+      setRateLimitError(null);
     } catch (error) {
       console.error('Failed to submit post:', error);
-      alert('Failed to submit post. Please try again later.');
+
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        const errorData = error.response.data;
+        const formErrors = errorData?._errors?.formErrors;
+        if (formErrors?.length > 0) {
+          const formError = formErrors[0];
+          if (
+            Array.isArray(formError) &&
+            formError[0] === 'requestErrors.rateLimitExceeded'
+          ) {
+            setRateLimitError(formError as [string, { retryAfter: string }]);
+          }
+        }
+      } else {
+        alert('Failed to submit post. Please try again later.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -301,6 +358,14 @@ function PostForm({
       <div className="px-4 sm:px-6 pb-4">
         <form onSubmit={submitPost}>
           <div className="flex flex-col gap-3">
+            {rateLimitError && countdown > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  Please wait {countdown} second{countdown !== 1 ? 's' : ''}{' '}
+                  before posting again
+                </p>
+              </div>
+            )}
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
@@ -308,14 +373,20 @@ function PostForm({
               className="w-full p-2 text-sm sm:text-base sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               rows={5}
               maxLength={500}
-              disabled={isSubmitting}
+              disabled={isSubmitting || countdown > 0}
             />
             <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={!postContent.trim()}
+                disabled={!postContent.trim() || countdown > 0}
                 loading={isSubmitting}
-                label={isSubmitting ? 'Posting...' : 'Post Anonymously'}
+                label={
+                  isSubmitting
+                    ? 'Posting...'
+                    : countdown > 0
+                    ? `Wait ${countdown}s`
+                    : 'Post Anonymously'
+                }
                 className=""
               />
             </div>
