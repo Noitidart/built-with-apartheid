@@ -180,17 +180,42 @@ function IpsContent(_props: TIpsContentProps) {
                             {ip.city && ip.country
                               ? `${ip.city}, ${ip.country}`
                               : ip.country || 'Unknown location'}
+                            {ip.regionCode && ` (${ip.regionCode})`}
+                            {ip.region && ` • ${ip.region}`}
                           </div>
                           <div className="mt-1 text-sm text-gray-600">
-                            {ip.users.length} User
-                            {ip.users.length !== 1 ? 's' : ''} •
-                            {ip.isBanned ? (
-                              <span className="text-red-600">Banned</span>
-                            ) : (
-                              <span>
-                                {isBannedFilter ? 'Banned' : 'Created'}{' '}
-                                {new Date(ip.createdAt).toLocaleDateString()}
-                              </span>
+                            <div>
+                              {ip.users.length} User
+                              {ip.users.length !== 1 ? 's' : ''} •
+                              {ip.isBanned ? (
+                                <span className="text-red-600">Banned</span>
+                              ) : (
+                                <span className="text-green-600">Active</span>
+                              )}
+                            </div>
+                            <div className="text-xs mt-1">
+                              First seen: {new Date(ip.createdAt).toLocaleDateString()} •
+                              Last seen: {new Date(ip.updatedAt).toLocaleDateString()}
+                            </div>
+                            {(ip.botScore !== null || ip.timezone || (ip.latitude && ip.longitude)) && (
+                              <div className="text-xs mt-1">
+                                {ip.timezone && `TZ: ${ip.timezone}`}
+                                {ip.botScore !== null && ` • Bot Score: ${ip.botScore}`}
+                                {ip.isVerifiedBot && ' (Verified Bot)'}
+                                {ip.latitude && ip.longitude && (
+                                  <>
+                                    {' • '}
+                                    <a
+                                      href={`https://www.openstreetmap.org/?mlat=${ip.latitude}&mlon=${ip.longitude}&zoom=12`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      View on map
+                                    </a>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -295,19 +320,28 @@ function IpsContent(_props: TIpsContentProps) {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       IP Address
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Bot Info
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Users
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {isBannedFilter ? 'Banned Since' : 'Created'}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      First Seen
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Last Seen
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -317,27 +351,66 @@ function IpsContent(_props: TIpsContentProps) {
                     (ip: TGetIpsResponseData['ips'][0]) => (
                       <>
                         <tr key={ip.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {ip.value}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                ID: {ip.id}
-                              </div>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {ip.value}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ID: {ip.id}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {ip.city && ip.country
-                                ? `${ip.city}, ${ip.country}`
-                                : ip.country || 'Unknown'}
-                            </div>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${
+                                ip.isBanned
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-green-100 text-green-700'
+                              }`}
+                            >
+                              {ip.isBanned ? 'Banned' : 'Active'}
+                            </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-3">
                             <div className="text-sm">
-                              {ip.users.length} User
-                              {ip.users.length !== 1 ? 's' : ''}
+                              {ip.city || 'Unknown'}
+                              {ip.region && `, ${ip.region}`}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {ip.country || 'Unknown'}
+                              {ip.regionCode && ` (${ip.regionCode})`}
+                              {ip.timezone && ` • ${ip.timezone}`}
+                              {ip.latitude && ip.longitude && (
+                                <>
+                                  {' • '}
+                                  <a
+                                    href={`https://www.openstreetmap.org/?mlat=${ip.latitude}&mlon=${ip.longitude}&zoom=12`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    View on map
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {ip.botScore !== null ? (
+                              <div className="text-sm">
+                                Score: {ip.botScore}
+                                {ip.isVerifiedBot && (
+                                  <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                    Verified
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">N/A</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="text-sm">
+                              {ip.users.length}
                               {ip.users.length > 0 && (
                                 <button
                                   onClick={() =>
@@ -345,21 +418,20 @@ function IpsContent(_props: TIpsContentProps) {
                                       expandedIpId === ip.id ? null : ip.id
                                     )
                                   }
-                                  className="ml-2 text-blue-600 hover:underline"
+                                  className="ml-2 text-blue-600 hover:underline text-xs"
                                 >
                                   {expandedIpId === ip.id ? 'Hide' : 'Show'}
                                 </button>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {ip.isBanned ? (
-                              <span className="text-red-600">Banned</span>
-                            ) : (
-                              new Date(ip.createdAt).toLocaleDateString()
-                            )}
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(ip.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(ip.updatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
                             <IpBanButton
                               ip={ip}
                               onSuccess={() => ipsQuery.refetch()}
@@ -368,7 +440,7 @@ function IpsContent(_props: TIpsContentProps) {
                         </tr>
                         {expandedIpId === ip.id && (
                           <tr>
-                            <td colSpan={5} className="px-6 py-4 bg-gray-50">
+                            <td colSpan={8} className="px-6 py-4 bg-gray-50">
                               {ip.users.length > 0 ? (
                                 <div>
                                   <h4 className="font-medium mb-2">

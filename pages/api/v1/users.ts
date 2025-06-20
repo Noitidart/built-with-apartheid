@@ -18,7 +18,11 @@ export type TUserWithIps = Pick<
   TUser,
   'id' | 'email' | 'isBanned' | 'createdAt'
 > & {
-  ips: Array<Pick<TIp, 'id' | 'value' | 'isBanned'>>;
+  ips: Array<Pick<TIp, 'id' | 'value' | 'isBanned' | 'city' | 'country' | 'region' | 'regionCode' | 'timezone' | 'botScore' | 'isVerifiedBot' | 'updatedAt' | 'latitude' | 'longitude'> & {
+    _count: {
+      users: number;
+    };
+  }>;
   _count: {
     interactions: number;
   };
@@ -88,7 +92,25 @@ const getUsersHandler = withPrisma(
           select: {
             id: true,
             value: true,
-            isBanned: true
+            isBanned: true,
+            city: true,
+            country: true,
+            region: true,
+            regionCode: true,
+            timezone: true,
+            botScore: true,
+            isVerifiedBot: true,
+            updatedAt: true,
+            latitude: true,
+            longitude: true,
+            _count: {
+              select: {
+                users: true
+              }
+            }
+          },
+          orderBy: {
+            updatedAt: 'desc'
           }
         },
         _count: {

@@ -16,7 +16,7 @@ const querySchema = z.object({
 
 export type TIpWithUsers = Pick<
   TIp,
-  'id' | 'value' | 'isBanned' | 'createdAt' | 'city' | 'country'
+  'id' | 'value' | 'isBanned' | 'createdAt' | 'updatedAt' | 'city' | 'country' | 'region' | 'regionCode' | 'timezone' | 'botScore' | 'isVerifiedBot' | 'postalCode' | 'latitude' | 'longitude' | 'metroCode'
 > & {
   users: Array<Pick<TUser, 'id' | 'email' | 'isBanned'>>;
   _count: {
@@ -98,9 +98,19 @@ const getIpsHandler = withPrisma(
         id: true,
         value: true,
         createdAt: true,
+        updatedAt: true,
         isBanned: true,
         city: true,
         country: true,
+        region: true,
+        regionCode: true,
+        timezone: true,
+        botScore: true,
+        isVerifiedBot: true,
+        postalCode: true,
+        latitude: true,
+        longitude: true,
+        metroCode: true,
         users: {
           select: {
             id: true,

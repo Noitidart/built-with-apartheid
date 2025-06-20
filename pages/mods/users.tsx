@@ -260,25 +260,52 @@ function UsersContent(_props: TUsersContentProps) {
                               (
                                 ip: TGetUsersResponseData['users'][0]['ips'][0]
                               ) => (
-                                <li key={ip.id} className="text-sm">
-                                  <Link
-                                    href={`/mods/ips?search=${encodeURIComponent(
-                                      ip.value
-                                    )}`}
-                                    className="text-blue-600 hover:underline"
-                                  >
-                                    {ip.value}
-                                  </Link>{' '}
-                                  -
-                                  <span
-                                    className={`ml-2 font-medium ${
-                                      ip.isBanned
-                                        ? 'text-red-600'
-                                        : 'text-gray-600'
-                                    }`}
-                                  >
-                                    {ip.isBanned ? 'Banned' : 'Not banned'}
-                                  </span>
+                                <li key={ip.id} className="text-sm space-y-1 mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <Link
+                                      href={`/mods/ips?search=${encodeURIComponent(
+                                        ip.value
+                                      )}`}
+                                      className="text-blue-600 hover:underline font-medium"
+                                    >
+                                      {ip.value}
+                                    </Link>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded ${
+                                        ip.isBanned
+                                          ? 'bg-red-100 text-red-700'
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}
+                                    >
+                                      {ip.isBanned ? 'Banned' : 'Active'}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-600 ml-4">
+                                    <div>
+                                      {ip.country}{ip.regionCode ? ` (${ip.regionCode})` : ''} • {ip.city}{ip.region ? `, ${ip.region}` : ''}
+                                    </div>
+                                    <div>
+                                      Timezone: {ip.timezone || 'Unknown'} • Bot Score: {ip.botScore ?? 'N/A'}
+                                      {ip.isVerifiedBot && ' (Verified Bot)'}
+                                      {ip.latitude && ip.longitude && (
+                                        <>
+                                          {' • '}
+                                          <a
+                                            href={`https://www.openstreetmap.org/?mlat=${ip.latitude}&mlon=${ip.longitude}&zoom=12`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:underline"
+                                          >
+                                            View on map
+                                          </a>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div>
+                                      Used by {ip._count.users} user{ip._count.users !== 1 ? 's' : ''} •
+                                      Last seen: {new Date(ip.updatedAt).toLocaleDateString()}
+                                    </div>
+                                  </div>
                                 </li>
                               )
                             )}
@@ -371,39 +398,97 @@ function UsersContent(_props: TUsersContentProps) {
                             <td colSpan={4} className="px-6 py-4 bg-gray-50">
                               {user.ips.length > 0 ? (
                                 <div>
-                                  <h4 className="font-medium mb-2">
+                                  <h4 className="font-medium mb-3">
                                     Associated IPs:
                                   </h4>
-                                  <ul className="space-y-1">
-                                    {user.ips.map(
-                                      (
-                                        ip: TGetUsersResponseData['users'][0]['ips'][0]
-                                      ) => (
-                                        <li key={ip.id} className="text-sm">
-                                          <Link
-                                            href={`/mods/ips?search=${encodeURIComponent(
-                                              ip.value
-                                            )}`}
-                                            className="text-blue-600 hover:underline"
-                                          >
-                                            {ip.value}
-                                          </Link>{' '}
-                                          -
-                                          <span
-                                            className={`ml-2 font-medium ${
-                                              ip.isBanned
-                                                ? 'text-red-600'
-                                                : 'text-gray-600'
-                                            }`}
-                                          >
-                                            {ip.isBanned
-                                              ? 'Banned'
-                                              : 'Not banned'}
-                                          </span>
-                                        </li>
-                                      )
-                                    )}
-                                  </ul>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                      <thead className="bg-gray-100">
+                                        <tr>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bot Info</th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Users</th>
+                                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Seen</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white divide-y divide-gray-200">
+                                        {user.ips.map(
+                                          (
+                                            ip: TGetUsersResponseData['users'][0]['ips'][0]
+                                          ) => (
+                                            <tr key={ip.id}>
+                                              <td className="px-4 py-2 text-sm">
+                                                <Link
+                                                  href={`/mods/ips?search=${encodeURIComponent(
+                                                    ip.value
+                                                  )}`}
+                                                  className="text-blue-600 hover:underline font-medium"
+                                                >
+                                                  {ip.value}
+                                                </Link>
+                                              </td>
+                                              <td className="px-4 py-2">
+                                                <span
+                                                  className={`text-xs px-2 py-1 rounded ${
+                                                    ip.isBanned
+                                                      ? 'bg-red-100 text-red-700'
+                                                      : 'bg-green-100 text-green-700'
+                                                  }`}
+                                                >
+                                                  {ip.isBanned ? 'Banned' : 'Active'}
+                                                </span>
+                                              </td>
+                                              <td className="px-4 py-2 text-sm text-gray-600">
+                                                {ip.country && ip.city ? (
+                                                  <>
+                                                    {ip.city}{ip.region ? `, ${ip.region}` : ''}<br />
+                                                    {ip.country} • {ip.timezone || 'Unknown TZ'}
+                                                    {ip.latitude && ip.longitude && (
+                                                      <>
+                                                        {' • '}
+                                                        <a
+                                                          href={`https://www.openstreetmap.org/?mlat=${ip.latitude}&mlon=${ip.longitude}&zoom=12`}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="text-blue-600 hover:underline"
+                                                        >
+                                                          Map
+                                                        </a>
+                                                      </>
+                                                    )}
+                                                  </>
+                                                ) : (
+                                                  'Unknown'
+                                                )}
+                                              </td>
+                                              <td className="px-4 py-2 text-sm text-gray-600">
+                                                {ip.botScore !== null ? (
+                                                  <>
+                                                    Score: {ip.botScore}
+                                                    {ip.isVerifiedBot && (
+                                                      <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                                        Verified
+                                                      </span>
+                                                    )}
+                                                  </>
+                                                ) : (
+                                                  'N/A'
+                                                )}
+                                              </td>
+                                              <td className="px-4 py-2 text-sm text-gray-600">
+                                                {ip._count.users}
+                                              </td>
+                                              <td className="px-4 py-2 text-sm text-gray-600">
+                                                {new Date(ip.updatedAt).toLocaleDateString()}
+                                              </td>
+                                            </tr>
+                                          )
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
                               ) : (
                                 <p className="text-sm text-gray-500">
