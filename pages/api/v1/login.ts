@@ -1,5 +1,6 @@
 import {
   getMeFromRefreshedToken,
+  hashPassword,
   setTokenCookie,
   verifyPassword
 } from '@/lib/auth.backend';
@@ -64,7 +65,8 @@ const loginHandler = withPrisma(async function loginHandler(
     }
   });
 
-  if (!user || !user.password) {
+  if (!user || (!user.isMod && !user.password)) {
+    // If is not a mod, and has no password, return 401, they don't get accounts.
     return res.status(401).json({
       success: false,
       _errors: {
@@ -74,18 +76,33 @@ const loginHandler = withPrisma(async function loginHandler(
     } satisfies TLoginResponseData);
   }
 
-  const isValidPassword = await verifyPassword({
-    password: body.password,
-    hashedPassword: user.password
-  });
-  if (!isValidPassword) {
-    return res.status(401).json({
-      success: false,
-      _errors: {
-        formErrors: ['authErrors.invalidCredentials'],
-        fieldErrors: {}
-      }
-    } satisfies TLoginResponseData);
+  // If user exists but has no password, set the provided password
+  if (!user.password) {
+    if (!user.isMod) {
+      throw new Error('Non-mod has no password');
+    }
+
+    const hashedPassword = await hashPassword(body.password);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    });
+  } else {
+    // Verify password if user already has one
+    const isValidPassword = await verifyPassword({
+      password: body.password,
+      hashedPassword: user.password
+    });
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        _errors: {
+          formErrors: ['authErrors.invalidCredentials'],
+          fieldErrors: {}
+        }
+      } satisfies TLoginResponseData);
+    }
   }
 
   // Check for anonymous user

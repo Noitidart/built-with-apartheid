@@ -134,7 +134,7 @@ function TeamManagement(_props: TTeamManagementProps) {
 }
 
 type TAddModeratorFormProps = {
-  onSubmit: (data: { email: string; password: string }) => void;
+  onSubmit: (data: { email: string }) => void;
   isLoading: boolean;
 };
 
@@ -143,14 +143,13 @@ function AddModeratorForm({ onSubmit, isLoading }: TAddModeratorFormProps) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
 
-    if (!email || !password) {
-      alert('Please fill in all fields');
+    if (!email) {
+      alert('Please enter an email address');
       return;
     }
 
-    onSubmit({ email, password });
+    onSubmit({ email });
   }
 
   return (
@@ -173,24 +172,10 @@ function AddModeratorForm({ onSubmit, isLoading }: TAddModeratorFormProps) {
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-        >
-          Password
-        </label>
-        <input
-          type="password"
-          name="password"
-          id="password"
-          required
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter a secure password"
-          disabled={isLoading}
-        />
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Share this password securely with the new moderator
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <p className="text-sm text-blue-700 dark:text-blue-300">
+          <strong>Note:</strong> On first login, whatever password the user
+          types will become their password.
         </p>
       </div>
 
@@ -232,7 +217,6 @@ function useAddModMutation(inputs: { onAddSuccess: () => void }) {
   return useMutation({
     mutationFn: async function addMod(data: {
       email: string;
-      password: string;
     }) {
       const response = await axios.post<TAddModResponseData>(
         '/api/v1/mods/team/add',

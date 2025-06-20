@@ -1,6 +1,5 @@
 import {
   getMeFromRefreshedToken,
-  hashPassword,
   userNanoidGenerator
 } from '@/lib/auth.backend';
 import { getOrCreateIp } from '@/lib/ip-utils.backend';
@@ -16,12 +15,10 @@ export type TAddModResponseData =
 
 export type TAddModRequestBody = {
   email: string;
-  password: string;
 };
 
 const BODY_SCHEMA = z.object({
-  email: z.string().email(),
-  password: z.string().min(6)
+  email: z.string().email()
 }) satisfies z.ZodType<TAddModRequestBody>;
 
 const addModHandler = withPrisma(async function addModHandler(
@@ -67,7 +64,7 @@ const addModHandler = withPrisma(async function addModHandler(
     });
   }
 
-  const { email, password } = result.data;
+  const { email } = result.data;
 
   // Check if user with this email already exists
   const existingUser = await prisma.user.findFirst({
@@ -86,25 +83,22 @@ const addModHandler = withPrisma(async function addModHandler(
     // If user exists but is not a mod, we'll update them
   }
 
-  // Hash the password using the same method as login
-  const hashedPassword = await hashPassword(password);
-
   if (existingUser) {
     // Update existing user to be a mod
     await prisma.user.update({
       where: { id: existingUser.id },
       data: {
-        isMod: true,
-        password: hashedPassword
+        isMod: true
       }
     });
   } else {
-    // Create new mod user
+    // Create new mod user without password
+    // Password will be set on first login
     await prisma.user.create({
       data: {
         id: userNanoidGenerator(),
         email,
-        password: hashedPassword,
+        password: null,
         isMod: true
       }
     });
