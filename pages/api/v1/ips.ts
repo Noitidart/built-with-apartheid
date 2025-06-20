@@ -66,7 +66,21 @@ const getIpsHandler = withPrisma(
         OR: [
           { value: { contains: search, mode: 'insensitive' as const } },
           { city: { contains: search, mode: 'insensitive' as const } },
-          { country: { contains: search, mode: 'insensitive' as const } }
+          { country: { contains: search, mode: 'insensitive' as const } },
+          {
+            users: {
+              some: {
+                email: { contains: search, mode: 'insensitive' as const }
+              }
+            }
+          },
+          {
+            users: {
+              some: {
+                id: { contains: search, mode: 'insensitive' as const }
+              }
+            }
+          }
         ]
       })
     };

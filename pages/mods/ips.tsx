@@ -144,7 +144,7 @@ function IpsContent(_props: TIpsContentProps) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by IP address, city, or country..."
+            placeholder="Search by IP address, city, country, user email, or user ID..."
             className="flex-1 px-4 py-2 border rounded-lg"
           />
           <Button type="submit" label="Search" size="md" />
