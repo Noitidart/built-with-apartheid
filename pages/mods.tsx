@@ -70,12 +70,12 @@ function Dashboard(props: TDashboardProps) {
 
           <Link
             href="/mods/activity"
-            className="block p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition opacity-50 cursor-not-allowed"
+            className="block p-6 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition"
           >
             <h3 className="text-xl font-semibold mb-2">Activity Monitor</h3>
 
             <p className="text-gray-600 dark:text-gray-400">
-              View recent user activity and identify bad actors (Coming soon)
+              View recent user activity and identify bad actors
             </p>
           </Link>
         </div>
