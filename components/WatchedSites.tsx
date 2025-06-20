@@ -16,9 +16,10 @@ export default function WatchedSites() {
   const [watchedSites, setWatchedSites] = useState<WatchedSite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchWatchedSites = async () => {
+    const fetchWatchedSites = async (retryCount = 0) => {
       const userId = getCurrentUserId();
       if (!userId) {
         setIsLoading(false);
@@ -29,18 +30,33 @@ export default function WatchedSites() {
         const response = await fetch(`/api/v1/users/${userId}/watched-sites`);
         if (response.ok) {
           const data = (await response.json()) as { sites: WatchedSite[] };
+          console.log(data);
           setWatchedSites(data.sites);
+          setError(null);
+        } else {
+          const data = await response.json();
+          if (response.status === 503 && retryCount < 3) {
+            // Wait for 5 seconds before retrying
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            return fetchWatchedSites(retryCount + 1);
+          }
+          throw new Error(
+            (data as { error?: string })?.error ||
+              'Failed to fetch watched sites'
+          );
         }
       } catch (error) {
         console.error('Failed to fetch watched sites:', error);
+        setError(error instanceof Error ? error.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchWatchedSites();
   }, []);
 
-  if (watchedSites.length === 0 && !isLoading) {
+  if (watchedSites.length === 0 && !isLoading && !error) {
     return null;
   }
 
@@ -127,6 +143,12 @@ export default function WatchedSites() {
       {!isExpanded && (
         <div className="h-full flex items-center justify-center">
           <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+        </div>
+      )}
+
+      {error && (
+        <div className="p-4 text-red-600 dark:text-red-400 text-sm">
+          {error}
         </div>
       )}
     </div>

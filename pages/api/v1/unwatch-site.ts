@@ -57,7 +57,7 @@ export async function unwatchSiteHandler(
     });
   }
 
-  // Disconnect user from website watchers
+  // remove user from watchers
   await prisma.website.update({
     where: { id: websiteId },
     data: {
