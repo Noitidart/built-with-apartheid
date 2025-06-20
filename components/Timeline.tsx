@@ -373,7 +373,7 @@ function PostForm({
               className="w-full p-2 text-sm sm:text-base sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               rows={5}
               maxLength={500}
-              disabled={isSubmitting || countdown > 0}
+              disabled={isSubmitting}
             />
             <div className="flex justify-end">
               <Button
