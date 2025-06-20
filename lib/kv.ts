@@ -44,22 +44,33 @@ export async function getKeyValue<T>(key: string): Promise<T | null> {
 /**
  * Set a value in Cloudflare KV store
  */
-export async function setKeyValue<T>(key: string, value: T): Promise<void> {
+export async function setKeyValue<T>(
+  key: string,
+  value: T,
+  options?: {
+    ttl?: number; // Seconds
+  }
+): Promise<void> {
   validateKvConfig();
 
-  const response = await fetch(
+  const url = new URL(
     `${CF_API_BASE}/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${CF_KV_NAMESPACE_ID}/values/${encodeURIComponent(
       key
-    )}`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${CF_API_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(value)
-    }
+    )}`
   );
+
+  if (options?.ttl) {
+    url.searchParams.append('expiration_ttl', options.ttl.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${CF_API_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(value)
+  });
 
   if (!response.ok) {
     const errorData = await response.text();

@@ -6,6 +6,10 @@ export function getRequestIp(request: NextApiRequest): string | null {
   // Check various headers for the real IP
   const headers = request.headers;
 
+  if (process.env.NODE_ENV === 'development') {
+    return '127.0.0.1';
+  }
+
   const cfConnectingIp = headers['cf-connecting-ip'];
   if (cfConnectingIp) {
     return Array.isArray(cfConnectingIp) ? cfConnectingIp[0] : cfConnectingIp;
@@ -23,6 +27,10 @@ export function getRequestIp(request: NextApiRequest): string | null {
 export function getEdgeRequestIp(request: NextRequest): string | null {
   // Check various headers for the real IP
   const headers = request.headers;
+
+  if (process.env.NODE_ENV === 'development') {
+    return '127.0.0.1';
+  }
 
   const cfConnectingIp = headers.get('cf-connecting-ip');
   if (cfConnectingIp) {
