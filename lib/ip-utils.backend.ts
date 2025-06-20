@@ -16,22 +16,24 @@ export async function getOrCreateIp(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cfProperties = (req as any).cf;
 
+  const commonData = {
+    city: cfProperties?.city || null,
+    country: cfProperties?.country || null,
+    latitude: cfProperties?.latitude || null,
+    longitude: cfProperties?.longitude || null,
+    postalCode: cfProperties?.postalCode || null,
+    metroCode: cfProperties?.metroCode || null,
+    region: cfProperties?.region || null,
+    regionCode: cfProperties?.regionCode || null,
+    timezone: cfProperties?.timezone || null,
+    botScore: cfProperties?.botManagement?.score || null,
+    isVerifiedBot: cfProperties?.botManagement?.verifiedBot || false
+  };
   const ip = await prisma.ip.upsert({
     where: { value: ipValue },
     create: {
       value: ipValue,
-      // Extract CF metadata if available
-      city: cfProperties?.city || null,
-      country: cfProperties?.country || null,
-      latitude: cfProperties?.latitude || null,
-      longitude: cfProperties?.longitude || null,
-      postalCode: cfProperties?.postalCode || null,
-      metroCode: cfProperties?.metroCode || null,
-      region: cfProperties?.region || null,
-      regionCode: cfProperties?.regionCode || null,
-      timezone: cfProperties?.timezone || null,
-      botScore: cfProperties?.botManagement?.score || null,
-      isVerifiedBot: cfProperties?.botManagement?.verifiedBot || false,
+      ...commonData,
       // Associate with user - create user if doesn't exist
       users: {
         connectOrCreate: {
@@ -42,6 +44,7 @@ export async function getOrCreateIp(
     },
     update: {
       updatedAt: new Date(),
+      ...commonData,
       // Associate with user - create user if doesn't exist
       users: {
         connectOrCreate: {
