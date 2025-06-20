@@ -1,4 +1,5 @@
 import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { Ip, PrismaClient } from '@prisma/client';
 import type { NextApiRequest } from 'next';
 
@@ -13,23 +14,20 @@ export async function getOrCreateIp(
     throw new Error('Could not determine IP address');
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cfProperties = (req as any).cf;
-
-  console.log({ cfProperties, reqKeys: Object.keys(req) });
+  const { cf } = getCloudflareContext();
 
   const commonData = {
-    city: cfProperties?.city || null,
-    country: cfProperties?.country || null,
-    latitude: cfProperties?.latitude || null,
-    longitude: cfProperties?.longitude || null,
-    postalCode: cfProperties?.postalCode || null,
-    metroCode: cfProperties?.metroCode || null,
-    region: cfProperties?.region || null,
-    regionCode: cfProperties?.regionCode || null,
-    timezone: cfProperties?.timezone || null,
-    botScore: cfProperties?.botManagement?.score || null,
-    isVerifiedBot: cfProperties?.botManagement?.verifiedBot || false
+    city: cf?.city || null,
+    country: cf?.country || null,
+    latitude: cf?.latitude || null,
+    longitude: cf?.longitude || null,
+    postalCode: cf?.postalCode || null,
+    metroCode: cf?.metroCode || null,
+    region: cf?.region || null,
+    regionCode: cf?.regionCode || null,
+    timezone: cf?.timezone || null,
+    botScore: cf?.botManagement?.score || null,
+    isVerifiedBot: cf?.botManagement?.verifiedBot || false
   };
   const ip = await prisma.ip.upsert({
     where: { value: ipValue },
