@@ -8,6 +8,7 @@ import type { TGetUsersResponseData } from '@/pages/api/v1/users';
 import type { TMe } from '@/types/user';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
@@ -260,7 +261,15 @@ function UsersContent(_props: TUsersContentProps) {
                                 ip: TGetUsersResponseData['users'][0]['ips'][0]
                               ) => (
                                 <li key={ip.id} className="text-sm">
-                                  {ip.value} -
+                                  <Link
+                                    href={`/mods/ips?search=${encodeURIComponent(
+                                      ip.value
+                                    )}`}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {ip.value}
+                                  </Link>{' '}
+                                  -
                                   <span
                                     className={`ml-2 font-medium ${
                                       ip.isBanned
@@ -371,7 +380,15 @@ function UsersContent(_props: TUsersContentProps) {
                                         ip: TGetUsersResponseData['users'][0]['ips'][0]
                                       ) => (
                                         <li key={ip.id} className="text-sm">
-                                          {ip.value} -
+                                          <Link
+                                            href={`/mods/ips?search=${encodeURIComponent(
+                                              ip.value
+                                            )}`}
+                                            className="text-blue-600 hover:underline"
+                                          >
+                                            {ip.value}
+                                          </Link>{' '}
+                                          -
                                           <span
                                             className={`ml-2 font-medium ${
                                               ip.isBanned
