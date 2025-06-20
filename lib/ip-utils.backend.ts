@@ -16,6 +16,8 @@ export async function getOrCreateIp(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cfProperties = (req as any).cf;
 
+  console.log({ cfProperties, reqKeys: Object.keys(req) });
+
   const commonData = {
     city: cfProperties?.city || null,
     country: cfProperties?.country || null,
