@@ -49,7 +49,7 @@ function BansDashboardContent(_props: TBansDashboardContentProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">Banned Users</h3>
           <p className="text-2xl font-semibold mt-2">
@@ -57,23 +57,9 @@ function BansDashboardContent(_props: TBansDashboardContentProps) {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">
-            Total Banned IPs
-          </h3>
+          <h3 className="text-sm font-medium text-gray-500">Banned IPs</h3>
           <p className="text-2xl font-semibold mt-2">
             {dashboardquery.data?.stats.totalBannedIps || 0}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">Soft Banned IPs</h3>
-          <p className="text-2xl font-semibold mt-2 text-yellow-600">
-            {dashboardquery.data?.stats.softBannedIps || 0}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">Hard Banned IPs</h3>
-          <p className="text-2xl font-semibold mt-2 text-red-600">
-            {dashboardquery.data?.stats.hardBannedIps || 0}
           </p>
         </div>
       </div>
@@ -88,7 +74,7 @@ function BansDashboardContent(_props: TBansDashboardContentProps) {
           <p className="text-gray-600">View and manage banned users</p>
         </Link>
         <Link
-          href="/mods/bans/ips"
+          href="/mods/ips"
           className="block bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
         >
           <h2 className="text-xl font-semibold mb-2">Banned IPs</h2>

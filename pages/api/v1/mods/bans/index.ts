@@ -11,8 +11,6 @@ export type TGetBanDashboardResponseData = {
   stats: {
     totalBannedUsers: number;
     totalBannedIps: number;
-    softBannedIps: number;
-    hardBannedIps: number;
   };
   recentBanInteractions: TBanInteraction[];
 };
@@ -32,32 +30,19 @@ const getBanDashboardHandler = withPrisma(
       });
     }
 
-    const [totalBannedUsers, totalBannedIps, softBannedIps, hardBannedIps] =
-      await Promise.all([
-        prisma.user.count({
-          where: { isBanned: true }
-        }),
-        prisma.ip.count({
-          where: { banLevel: { not: null } }
-        }),
-        prisma.ip.count({
-          where: { banLevel: 'SOFT' }
-        }),
-        prisma.ip.count({
-          where: { banLevel: 'HARD' }
-        })
-      ]);
+    const [totalBannedUsers, totalBannedIps] = await Promise.all([
+      prisma.user.count({
+        where: { isBanned: true }
+      }),
+      prisma.ip.count({
+        where: { isBanned: true }
+      })
+    ]);
 
     const recentBanInteractions = await prisma.interaction.findMany({
       where: {
         type: {
-          in: [
-            'BANNED_USER',
-            'UNBANNED_USER',
-            'SOFT_BANNED_IPS',
-            'HARD_BANNED_IPS',
-            'UNBANNED_IPS'
-          ]
+          in: ['BANNED_USER', 'UNBANNED_USER', 'BANNED_IPS', 'UNBANNED_IPS']
         }
       },
       orderBy: {
@@ -70,9 +55,7 @@ const getBanDashboardHandler = withPrisma(
     return res.status(200).json({
       stats: {
         totalBannedUsers,
-        totalBannedIps,
-        softBannedIps,
-        hardBannedIps
+        totalBannedIps
       },
       recentBanInteractions
     } satisfies TGetBanDashboardResponseData);
