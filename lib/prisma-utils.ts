@@ -10,3 +10,12 @@ export function isNothingToDeleteError(error: unknown) {
     error.meta.cause === 'Record to delete does not exist.'
   );
 }
+
+export function isNothingToUpdateError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2025'
+  );
+}

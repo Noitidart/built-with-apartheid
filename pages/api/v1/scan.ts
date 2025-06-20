@@ -4,7 +4,7 @@ import {
   type CompanyId
 } from '@/constants/companies';
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
-import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
@@ -61,7 +61,6 @@ type TCloudflareBrowserRenderingResponse =
   | TCloudflareBrowserRenderingSuccessResponse
   | TCloudflareBrowserRenderingErrorResponse;
 
-
 // In case of error WHILE cached scan exists, will fallback to display cached
 // scan ALONG WITH error. If no cached scan, then it just shows the error.
 export type TScanResponseData =
@@ -116,6 +115,9 @@ const newScanHandler = withPrisma(async function newScanHandler(
     response: res
   });
   const userId = me.id;
+
+  // Get or create IP for the user
+  const userIp = await getOrCreateIp(prisma, req, userId);
 
   const hostname = getNormalizedHostname(url);
 
@@ -296,7 +298,7 @@ const newScanHandler = withPrisma(async function newScanHandler(
       type: 'SCAN',
       websiteId: website.id,
       userId: userId,
-      userIp: getRequestIp(req) || 'unknown',
+      ipId: userIp.id,
       scan: {
         create: {
           changes,
@@ -337,7 +339,10 @@ const newScanHandler = withPrisma(async function newScanHandler(
   } satisfies TScanResponseData);
 });
 
-function sendFetchHtmlErrorResponse(res: NextApiResponse, error: FetchHtmlError): void {
+function sendFetchHtmlErrorResponse(
+  res: NextApiResponse,
+  error: FetchHtmlError
+): void {
   if (error instanceof FetchHtmlError === false) {
     console.error('getFetchHtmlErrorResponse: Got non-FetchHtmlError', {
       error

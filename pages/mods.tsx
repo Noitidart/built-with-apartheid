@@ -5,7 +5,6 @@ import { getLoginLayoutServerSideProps } from '@/lib/login-layout.backend';
 import type { TMe } from '@/types/user';
 import Link from 'next/link';
 
-
 export const getServerSideProps = getLoginLayoutServerSideProps;
 
 type TModsPageProps = Awaited<ReturnType<typeof getServerSideProps>>['props'];
@@ -45,6 +44,27 @@ function Dashboard(props: TDashboardProps) {
 
             <p className="text-gray-600 dark:text-gray-400">
               Add or remove moderators from the team
+            </p>
+          </Link>
+
+          <Link
+            href="/mods/users"
+            className="block p-6 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition"
+          >
+            <h3 className="text-xl font-semibold mb-2">Manage Users</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              View and manage all users
+            </p>
+          </Link>
+
+          <Link
+            href="/mods/bans"
+            className="block p-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition"
+          >
+            <h3 className="text-xl font-semibold mb-2">Manage Bans</h3>
+
+            <p className="text-gray-600 dark:text-gray-400">
+              View and manage user and IP bans
             </p>
           </Link>
 

@@ -7,6 +7,7 @@ import type {
   NextApiRequest,
   NextApiResponse
 } from 'next';
+import type { NextRequest } from 'next/server';
 
 // JWT token expiration (1 day)
 const USER_TOKEN_JWT_MAX_AGE_SECONDS = 24 * 60 * 60;
@@ -234,6 +235,10 @@ export function getTokenFromRequest(
 ): string | null {
   // Next.js adds an additional `cookies` object to the request - https://nextjs.org/docs/pages/api-reference/functions/get-server-side-props
   return request.cookies[USER_TOKEN_COOKIE_NAME] || null;
+}
+
+export function getTokenFromEdgeRequest(request: NextRequest): string | null {
+  return request.cookies.get(USER_TOKEN_COOKIE_NAME)?.value || null;
 }
 
 /**

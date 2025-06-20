@@ -28,14 +28,19 @@ model User {
   email    String? @unique
   password String?
   isMod    Boolean @default(false)
+  isBanned Boolean @default(false)
 
   // Relations
   // (One-to-many-required) One user can have zero or many scans WHILE one scan belongs to exactly one user
-  scans        Scan[]
+  scans                 Scan[]
   // (One-to-many-optional) One user can have zero or many interactions WHILE one interaction can belong to zero or one user
-  interactions Interaction[]
+  interactions          Interaction[]
   // (One-to-many-required) One user can have zero or many posts WHILE one post belongs to exactly one user
-  posts        Post[]
+  posts                 Post[]
+  // (Many-to-many) One user can use many IPs WHILE one IP can be used by many users
+  ips                   Ip[]
+  // (Many-to-many) One user can be target of many interactions WHILE one interaction can target many users
+  targetForInteractions Interaction[] @relation("InteractionTargetUsers")
 }
 
 model Website {
@@ -54,6 +59,36 @@ model Website {
   posts        Post[]
   // (One-to-many-optional) One website can have zero or many milestones WHILE one milestone can belong to zero or one website
   milestones   Milestone[]
+}
+
+model Ip {
+  id    Int    @id @default(autoincrement())
+  value String @unique
+
+  // CF metadata
+  city          String?
+  country       String?
+  latitude      String?
+  longitude     String?
+  postalCode    String?
+  metroCode     String?
+  region        String?
+  regionCode    String?
+  timezone      String?
+  botScore      Int?
+  isVerifiedBot Boolean @default(false)
+
+  isBanned  Boolean  @default(false)
+  createdAt DateTime @default(now()) // First seen
+  updatedAt DateTime @default(now()) @updatedAt // Last seen
+
+  // Relations
+  // (Many-to-many) One IP can be used by many users WHILE one user can use many IPs
+  users                 User[]
+  // (One-to-many-required) One IP can have zero or many interactions WHILE one interaction belongs to exactly one IP
+  interactions          Interaction[]
+  // (Many-to-many) One IP can be target of many interactions WHILE one interaction can target many IPs
+  targetForInteractions Interaction[] @relation("InteractionTargetIps")
 }
 
 model Scan {
@@ -83,7 +118,8 @@ model Interaction {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @default(now()) @updatedAt
   type      InteractionType
-  userIp    String?
+  /// [TInteractionData]
+  data      Json?
 
   // Relations
   // (One-to-many-optional) One interaction can belong to zero or one user WHILE a user can have zero or many interactions
@@ -94,6 +130,11 @@ model Interaction {
   // Note: MOD_ADDED and MOD_REMOVED interaction types do not have an associated website
   website   Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   websiteId Int?
+
+  // (One-to-many-optional) One interaction can belong to zero or one IP WHILE an IP can have zero or many interactions
+  // Note: System-generated interactions (like milestones) will not have an associated IP
+  ip   Ip?  @relation(fields: [ipId], references: [id])
+  ipId Int?
 
   // (One-to-one) One interaction can have zero or one scan WHILE a scan belongs to exactly one interaction
   scan Scan?
@@ -108,6 +149,11 @@ model Interaction {
 
   // (One-to-one) One interaction can have zero or one post WHILE a post belongs to exactly one interaction
   post Post?
+
+  // (Many-to-many) One interaction can target many users WHILE one user can be target of many interactions
+  targetUsers User[] @relation("InteractionTargetUsers")
+  // (Many-to-many) One interaction can target many IPs WHILE one IP can be target of many interactions
+  targetIps   Ip[]   @relation("InteractionTargetIps")
 }
 
 enum InteractionType {
@@ -116,6 +162,10 @@ enum InteractionType {
   MILESTONE
   MOD_ADDED
   MOD_REMOVED
+  BANNED_USER
+  UNBANNED_USER
+  BANNED_IPS
+  UNBANNED_IPS
 }
 
 model Post {

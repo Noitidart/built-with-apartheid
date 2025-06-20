@@ -1,5 +1,5 @@
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
-import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import type { PrismaClient } from '@prisma/client';
@@ -87,13 +87,17 @@ const removeModHandler = withPrisma(async function removeModHandler(
     data: { isMod: false }
   });
 
+  // Get or create IP for the moderator
+  const moderatorIp = await getOrCreateIp(prisma, req, me.id);
+
   // Create MOD_REMOVED interaction
   await prisma.interaction.create({
     data: {
       type: 'MOD_REMOVED',
       userId: me.id,
-      userIp: getRequestIp(req) || 'unknown',
-      websiteId: null
+      ipId: moderatorIp.id,
+      data: null,
+      targetUsers: { connect: { id: userId } }
     }
   });
 

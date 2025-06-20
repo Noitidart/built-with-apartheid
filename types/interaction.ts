@@ -1,9 +1,42 @@
 import { isFirstScanMilestone, type TMilestone } from '@/types/milestone';
 import type { TPost } from '@/types/post';
 import type { TScan } from '@/types/scan';
-import type { Interaction } from '@prisma/client';
+import type { Interaction, InteractionType } from '@prisma/client';
 
 export type TInteraction = Interaction;
+
+// Ban-related interaction data types
+export type TBannedUserInteractionData = {
+  reason: string;
+};
+
+export type TUnbannedUserInteractionData = {
+  reason: string;
+};
+
+export type TBannedIpsInteractionData = {
+  reason: string;
+};
+
+export type TUnbannedIpsInteractionData = {
+  reason: string;
+};
+
+// MOD_ADDED and MOD_REMOVED have no data
+export type TModAddedInteractionData = null;
+export type TModRemovedInteractionData = null;
+
+declare global {
+  namespace PrismaJson {
+    type TInteractionData =
+      | TBannedUserInteractionData
+      | TUnbannedUserInteractionData
+      | TBannedIpsInteractionData
+      | TUnbannedIpsInteractionData
+      | TModAddedInteractionData
+      | TModRemovedInteractionData;
+  }
+}
 
 export function assertIsScanInteraction<
   UInteraction extends Partial<TInteraction>,
@@ -95,4 +128,79 @@ export function isFirstScanInteraction(interaction: {
   dataInteractionForMilestones: Array<Pick<TMilestone, 'data'>>;
 }) {
   return interaction.dataInteractionForMilestones.some(isFirstScanMilestone);
+}
+
+// Master type guard with generics
+export function isInteractionOfType<
+  T extends Partial<TInteraction>,
+  Type extends InteractionType
+>(
+  interaction: T,
+  type: Type
+): interaction is T & {
+  type: Type;
+  data: 'data' extends keyof T
+    ? Type extends 'BANNED_USER'
+      ? TBannedUserInteractionData
+      : Type extends 'UNBANNED_USER'
+      ? TUnbannedUserInteractionData
+      : Type extends 'BANNED_IPS'
+      ? TBannedIpsInteractionData
+      : Type extends 'UNBANNED_IPS'
+      ? TUnbannedIpsInteractionData
+      : Type extends 'MOD_ADDED'
+      ? null
+      : Type extends 'MOD_REMOVED'
+      ? null
+      : Type extends 'MILESTONE'
+      ? TMilestone['data']
+      : T['data']
+    : never;
+  scan: Type extends 'SCAN'
+    ? 'scan' extends keyof T
+      ? NonNullable<T['scan']>
+      : never
+    : never;
+  post: Type extends 'POST'
+    ? 'post' extends keyof T
+      ? NonNullable<T['post']>
+      : never
+    : never;
+  milestone: Type extends 'MILESTONE'
+    ? 'milestone' extends keyof T
+      ? NonNullable<T['milestone']>
+      : never
+    : never;
+} {
+  return interaction.type === type;
+}
+
+// Convenience functions
+export const isBannedUserInteraction = <T extends Partial<TInteraction>>(
+  interaction: T
+) => isInteractionOfType(interaction, 'BANNED_USER');
+
+export const isModAddedInteraction = <T extends Partial<TInteraction>>(
+  interaction: T
+) => isInteractionOfType(interaction, 'MOD_ADDED');
+
+export const isModRemovedInteraction = <T extends Partial<TInteraction>>(
+  interaction: T
+) => isInteractionOfType(interaction, 'MOD_REMOVED');
+
+// For asserting relations exist
+export function assertHasTargetUsers<T extends { targetUsers?: any }>(
+  interaction: T
+): asserts interaction is T & { targetUsers: Array<any> } {
+  if (!interaction.targetUsers || !Array.isArray(interaction.targetUsers)) {
+    throw new Error('Interaction missing targetUsers');
+  }
+}
+
+export function assertHasTargetIps<T extends { targetIps?: any }>(
+  interaction: T
+): asserts interaction is T & { targetIps: Array<any> } {
+  if (!interaction.targetIps || !Array.isArray(interaction.targetIps)) {
+    throw new Error('Interaction missing targetIps');
+  }
 }

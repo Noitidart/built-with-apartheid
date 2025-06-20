@@ -3,7 +3,7 @@ import {
   hashPassword,
   userNanoidGenerator
 } from '@/lib/auth.backend';
-import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import type { PrismaClient } from '@prisma/client';
@@ -37,7 +37,6 @@ const addModHandler = withPrisma(async function addModHandler(
       }
     });
   }
-
 
   const me = await getMeFromRefreshedToken({
     prisma,
@@ -111,12 +110,19 @@ const addModHandler = withPrisma(async function addModHandler(
     });
   }
 
+  // Get or create IP for the moderator
+  const moderatorIp = await getOrCreateIp(prisma, req, me.id);
+
   // Create MOD_ADDED interaction
   await prisma.interaction.create({
     data: {
       type: 'MOD_ADDED',
       userId: me.id,
-      userIp: getRequestIp(req) || 'unknown'
+      ipId: moderatorIp.id,
+      data: null,
+      targetUsers: existingUser
+        ? { connect: { id: existingUser.id } }
+        : undefined
     }
   });
 

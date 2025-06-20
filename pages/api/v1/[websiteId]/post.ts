@@ -1,5 +1,5 @@
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
-import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import {
   assertIsPostInteraction,
@@ -66,6 +66,9 @@ const newPostHandler = withPrisma(async function newPostHandler(
   });
   const userId = me.id;
 
+  // Get or create IP for the user
+  const userIp = await getOrCreateIp(prisma, req, userId);
+
   const bodyResult = bodySchema.safeParse(unknownBody);
 
   if (!bodyResult.success) {
@@ -101,7 +104,7 @@ const newPostHandler = withPrisma(async function newPostHandler(
       type: 'POST',
       websiteId,
       userId,
-      userIp: getRequestIp(req) || 'unknown',
+      ipId: userIp.id,
       post: {
         create: {
           body: content.trim(),
