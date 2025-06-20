@@ -3,7 +3,7 @@ import Button from '@/components/Button';
 import CompanyList from '@/components/CompanyList';
 import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
-import WatchDialog from '@/components/WatchDialog';
+import WatchSiteSection from '@/components/WatchSiteSection';
 import type { CompanyId } from '@/constants/companies';
 import useForceRender from '@/hooks/useForceRender';
 import {
@@ -13,7 +13,6 @@ import {
 import { isNonNullish } from '@/lib/typescript';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import { getCurrentUserId } from '@/utils/user-utils';
-import { User } from '@prisma/client';
 import {
   useQuery,
   useQueryClient,
@@ -23,7 +22,6 @@ import axios from 'axios';
 import classnames from 'classnames';
 import delay from 'delay';
 import { get } from 'lodash';
-import { Bell } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -294,6 +292,15 @@ function UrlPage() {
               errorUpdateCount={scanQuery.errorUpdateCount}
             />
           )}
+
+          {scanQuery.isSuccess &&
+            scanQuery.data?.website.id &&
+            !scanQuery.isFetching && (
+              <WatchSiteSection
+                websiteId={scanQuery.data.website.id}
+                hostname={url || ''}
+              />
+            )}
 
           {scanQuery.isSuccess &&
             scanQuery.data &&
@@ -780,46 +787,46 @@ type ScanResultsProps = {
 };
 
 function ScanResults({ data, onForceScan }: ScanResultsProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  console.log(user);
   const detectedCompanies = getDetectedCompanies(
     data.scanInteraction.scan.changes
   );
   const hasDetectedCompanies = detectedCompanies.length > 0;
 
-  const handleWatchDialog = async () => {
-    console.log('before handle watch dialog');
-    const userId = getCurrentUserId();
-    console.log(userId);
-    if (userId) {
-      // const user = await axios.get<User | null>(`/api/v1/users/${userId}`);
-      const response = await fetch(`/api/v1/users/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        // setIsWatching(true);
-        // const data = await response.json();
-        // console.log(data);
-        setUser(await response.json());
-      } else setUser(null);
-
-      // setEmail(user?.email || currentEmail) ;
-    }
-
-    setIsDialogOpen(true);
-  };
-
   return (
     <>
-      <h3 className="text-lg sm:text-xl font-medium mb-4">
-        Scan Results for {data.website.hostname}
-      </h3>
+      {/* Status Icon and Title */}
+      <div className="flex items-center gap-2 mb-6">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={classnames(
+            'h-8 w-8',
+            hasDetectedCompanies
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-green-600 dark:text-green-400'
+          )}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d={
+              hasDetectedCompanies
+                ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                : 'M5 13l4 4L19 7'
+            }
+          />
+        </svg>
+        <span className="text-xl font-bold">
+          {hasDetectedCompanies
+            ? 'Israeli Technology Detected'
+            : 'No Israeli Technologies Found'}
+        </span>
+      </div>
 
+      {/* Cache Notice */}
       {data.isCached && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex flex-col items-start sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -851,84 +858,29 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
         </div>
       )}
 
-      <div className="flex items-center mb-4">
-        <div
-          className={classnames(
-            // 'flex flex-col sm:flex-row sm:items-center sm:justify-between',
-            'flex justify-between grow',
-            hasDetectedCompanies
-              ? 'text-red-600 dark:text-red-400'
-              : 'text-green-600 dark:text-green-400'
-          )}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-8 w-8 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={
-                  hasDetectedCompanies
-                    ? 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-                    : 'M5 13l4 4L19 7'
-                }
-              />
-            </svg>
+      {/* Scan Results */}
+      <div className="mt-6">
+        <h3 className="text-lg sm:text-xl font-medium mb-4">
+          Scan Results for {data.website.hostname}
+        </h3>
 
-            <span className="text-xl font-bold">
-              {hasDetectedCompanies
-                ? 'Israeli Technology Detected'
-                : 'No Israeli Technologies Found'}
-            </span>
-          </div>
-          {hasDetectedCompanies ? (
-            <button
-              onClick={() => handleWatchDialog()}
-              className="ml-auto flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <Bell className="w-4 h-4" />
-              Watch this site
-            </button>
-          ) : (
-            ''
-          )}
-        </div>
+        <p className="text-base sm:text-lg mb-6">
+          {hasDetectedCompanies
+            ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
+            : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
+        </p>
+
+        {hasDetectedCompanies && (
+          <>
+            <h4 className="text-lg font-medium mb-3">Detected Technologies:</h4>
+
+            <CompanyList
+              companyIds={detectedCompanies}
+              isProbablyMasjid={data.website.isMasjid}
+            />
+          </>
+        )}
       </div>
-
-      {isDialogOpen && (
-        <WatchDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          site={data.website.hostname}
-          siteId={data.website.id}
-          currentEmail={user?.email || ''}
-          // to do change to something dynamic
-          isCurrentlyWatching={false}
-        />
-      )}
-
-      <p className="text-base sm:text-lg mb-6">
-        {hasDetectedCompanies
-          ? `This website appears to use Israeli technologies. The data privacy and security of your organization and partners have been compromised.`
-          : `Your website does not appear to use any Israeli technologies. Continue maintaining high security standards.`}
-      </p>
-
-      {hasDetectedCompanies && (
-        <>
-          <h4 className="text-lg font-medium mb-3">Detected Technologies:</h4>
-
-          <CompanyList
-            companyIds={detectedCompanies}
-            isProbablyMasjid={data.website.isMasjid}
-          />
-        </>
-      )}
     </>
   );
 }

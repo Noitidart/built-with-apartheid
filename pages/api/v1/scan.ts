@@ -553,7 +553,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
 
   await Promise.all([
     newCompanyIds.map(
-      async function checkForPreviusNewDetectionForCompanyThenCreateMilestone(
+      async function checkForPreviousNewDetectionForCompanyThenCreateMilestone(
         companyId
       ) {
         const pastNewDetection = await inputs.prisma.scan.findFirst({
@@ -609,14 +609,14 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
     return;
   }
 
-  const stilHasOtherCompanies = COMPANIES.map(getCompanyIdFromDescription).some(
-    function isCompanyInfectionPresent(companyId) {
-      return (
-        inputs.scanInteraction.scan.changes[companyId] === 'new' ||
-        inputs.scanInteraction.scan.changes[companyId] === 'still-present'
-      );
-    }
-  );
+  const stillHasOtherCompanies = COMPANIES.map(
+    getCompanyIdFromDescription
+  ).some(function isCompanyInfectionPresent(companyId) {
+    return (
+      inputs.scanInteraction.scan.changes[companyId] === 'new' ||
+      inputs.scanInteraction.scan.changes[companyId] === 'still-present'
+    );
+  });
 
   for (const companyId of removedCompanyIds) {
     await inputs.prisma.interaction.create({
@@ -628,7 +628,7 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
             websiteId: inputs.scanInteraction.websiteId,
             dataInteractionId: inputs.scanInteraction.id,
             data: {
-              type: stilHasOtherCompanies
+              type: stillHasOtherCompanies
                 ? 'company-removed-but-has-others'
                 : 'company-removed-and-no-others',
               companyId

@@ -9,7 +9,7 @@ import {
   Section,
   Text
 } from '@react-email/components';
-
+import { AlertTriangle, Clock, Shield, TrendingUp, Users } from 'lucide-react';
 // New Vulnerability Alert Email
 export function ApartheidEmailAlert({
   siteUrl,
@@ -807,3 +807,251 @@ export function TechnologyChangeAlert({
     </Html>
   );
 }
+
+// new more frightening email alert
+export const EnhancedSecurityAlert = ({
+  siteUrl = 'example.com',
+  userName = 'ethical user',
+  severityLevel = 'Critical',
+  vulnerabilityName = 'SQL Injection',
+  detectedTechnology = 'PHP/MySQL',
+  firstDetectedDate = new Date().toLocaleString(),
+  activeUsers = 15420,
+  scanCount = 847,
+  recentChanges = 23,
+  riskScore = 9.2,
+  unsubscribeUrl = '#'
+}) => {
+  const getRiskColor = (score: number) => {
+    if (score >= 9) return 'text-red-600';
+    if (score >= 7) return 'text-orange-600';
+    return 'text-yellow-600';
+  };
+
+  const getSeverityColor = (level: string) => {
+    switch (level.toLowerCase()) {
+      case 'critical':
+        return 'bg-red-100 border-red-500 text-red-800';
+      case 'high':
+        return 'bg-orange-100 border-orange-500 text-orange-800';
+      case 'medium':
+        return 'bg-yellow-100 border-yellow-500 text-yellow-800';
+      default:
+        return 'bg-gray-100 border-gray-500 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto bg-white font-sans">
+      {/* Header - More Urgent */}
+      <div className="bg-red-600 text-white p-6 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <AlertTriangle className="w-8 h-8 animate-pulse" />
+          <h1 className="text-2xl font-bold">🚨 IMMEDIATE ACTION REQUIRED</h1>
+        </div>
+        <p className="text-red-100 text-lg">
+          Critical Security Breach Detected
+        </p>
+      </div>
+
+      {/* Urgency Banner */}
+      <div className="bg-red-50 border-l-4 border-red-500 p-4">
+        <div className="flex items-start gap-3">
+          <Clock className="w-5 h-5 text-red-500 mt-0.5" />
+          <div>
+            <p className="text-red-800 font-semibold">Time-Sensitive Alert</p>
+            <p className="text-red-700 text-sm">
+              This vulnerability has been active for{' '}
+              {Math.floor(
+                (new Date().getTime() - new Date(firstDetectedDate).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )}{' '}
+              days and is currently being exploited
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="p-6">
+        <p className="text-gray-700 mb-6">Hello {userName},</p>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-gray-800 font-medium mb-2">
+            A <span className="font-bold text-red-600">CRITICAL</span> security
+            vulnerability remains unpatched on
+            <span className="font-bold text-blue-600"> {siteUrl}</span> - a site
+            you&apos;re monitoring.
+          </p>
+          <p className="text-red-700 font-semibold">
+            ⚠️ Your users and data are at immediate risk of compromise
+          </p>
+        </div>
+
+        {/* Impact Metrics - New Section */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-red-500" />
+            Impact Analysis
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-3 rounded border">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">
+                  Active Users at Risk
+                </span>
+              </div>
+              <span className="text-2xl font-bold text-red-600">
+                {activeUsers.toLocaleString()}
+              </span>
+            </div>
+            <div className="bg-white p-3 rounded border">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-4 h-4 text-orange-500" />
+                <span className="text-sm text-gray-600">Risk Score</span>
+              </div>
+              <span className={`text-2xl font-bold ${getRiskColor(riskScore)}`}>
+                {riskScore}/10
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-sm text-yellow-800">
+              <strong>{scanCount}</strong> security scans detected this
+              vulnerability |<strong> {recentChanges}</strong> recent site
+              changes may have worsened exposure
+            </p>
+          </div>
+        </div>
+
+        {/* Vulnerability Details - Enhanced */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-gray-800 mb-3 text-lg">
+            🔍 Vulnerability Details
+          </h3>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-700">Issue Type:</span>
+              <span className="font-bold text-red-600">
+                {vulnerabilityName}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-700">
+                Affected Technology:
+              </span>
+              <span className="font-mono text-gray-800 bg-gray-100 px-2 py-1 rounded">
+                {detectedTechnology}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-700">Severity Level:</span>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-bold border-2 ${getSeverityColor(severityLevel)}`}
+              >
+                {severityLevel.toUpperCase()}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-700">First Detected:</span>
+              <span className="text-gray-800">{firstDetectedDate}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Threat Level - New Section */}
+        <div className="bg-red-600 text-white rounded-lg p-4 mb-6">
+          <h3 className="font-bold mb-2 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            Immediate Threats Identified
+          </h3>
+          <ul className="space-y-1 text-sm text-red-100">
+            <li>• Data breach and user information theft</li>
+            <li>• Administrative access compromise</li>
+            <li>• Malware injection and site defacement</li>
+            <li>• SEO poisoning and search ranking damage</li>
+            <li>• Legal liability and compliance violations</li>
+          </ul>
+        </div>
+
+        {/* Action Items - More Urgent */}
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-orange-800 mb-3 text-lg">
+            ⚡ REQUIRED ACTIONS (Next 24 Hours)
+          </h3>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+                1
+              </span>
+              <span className="text-orange-800 font-medium">
+                Contact your development team immediately
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+                2
+              </span>
+              <span className="text-orange-800 font-medium">
+                Implement emergency security patches
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+                3
+              </span>
+              <span className="text-orange-800 font-medium">
+                Monitor for suspicious activity
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+                4
+              </span>
+              <span className="text-orange-800 font-medium">
+                Consider temporarily disabling affected features
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Call to Action - Enhanced */}
+        <div className="text-center mb-6">
+          <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg shadow-lg transition-colors">
+            🚨 SECURE YOUR SITE NOW
+          </button>
+          <p className="text-gray-600 text-sm mt-2">
+            Every minute of delay increases your risk exposure
+          </p>
+        </div>
+
+        {/* Footer Warning */}
+        <div className="bg-gray-100 border-l-4 border-gray-400 p-4 mb-4">
+          <p className="text-gray-700 text-sm">
+            <strong>Delayed Response Risk:</strong> Vulnerabilities of this
+            severity are typically exploited within 72 hours of detection.
+            Immediate action is crucial to prevent data breach and system
+            compromise.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center text-gray-500 text-sm border-t pt-4">
+          <p>
+            This is an automated security alert from your monitoring system.
+          </p>
+          <p className="mt-2">
+            <a href={unsubscribeUrl} className="text-blue-600 hover:underline">
+              Unsubscribe from alerts
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};

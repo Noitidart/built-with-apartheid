@@ -3,7 +3,7 @@
 import { getCurrentUserId } from '@/utils/user-utils';
 // import axios from 'axios';
 // import { sendUnethicalSiteAlert } from '@/lib/email';
-import { Bell, BellOff, Mail, Shield, X } from 'lucide-react';
+import { Mail, Shield, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface WatchDialogProps {
@@ -13,6 +13,7 @@ interface WatchDialogProps {
   siteId: number;
   currentEmail: string;
   isCurrentlyWatching: boolean;
+  onWatchStatusChange?: (isWatching: boolean) => void;
 }
 
 export const tryEmailSend = async (email: string, site: string) => {
@@ -24,7 +25,6 @@ export const tryEmailSend = async (email: string, site: string) => {
       siteUrl: site
     };
     console.log(requestBody);
-    // const response = await axios.post('/api/v1/send-email', requestBody);
 
     const response = await fetch('/api/v1/send-email', {
       method: 'POST',
@@ -34,7 +34,7 @@ export const tryEmailSend = async (email: string, site: string) => {
       body: JSON.stringify(requestBody)
     });
     if (response.ok) {
-      alert('Email sent'); // to do replace with better alert
+      alert('Email sent');
     }
   } catch (error) {
     console.log(error);
@@ -47,22 +47,40 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
   site,
   siteId,
   currentEmail = '',
-  // to do implement passing this in dynamically
-  isCurrentlyWatching = false
+  isCurrentlyWatching = false,
+  onWatchStatusChange
 }) => {
-  const [watchType, setWatchType] = useState(
-    isCurrentlyWatching ? 'subscribed' : 'not-subscribed'
-  );
   const [email, setEmail] = useState(currentEmail);
 
   if (!isOpen) return null;
 
   const handleWatch = async (websiteId: number) => {
-    // to review, having these as strings prob increases errors
-    if (watchType === 'subscribed') {
-      try {
-        const userId = getCurrentUserId();
-        console.log(userId);
+    try {
+      const userId = getCurrentUserId();
+      console.log(userId);
+
+      if (isCurrentlyWatching) {
+        // Unwatch site
+        const response = await fetch('/api/v1/unwatch-site', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            websiteId,
+            userId
+          })
+        });
+
+        if (response.ok) {
+          alert('Successfully unwatched site');
+          onWatchStatusChange?.(false);
+          onClose();
+        } else {
+          alert('Failed to unwatch site');
+        }
+      } else {
+        // Watch site
         const response = await fetch('/api/v1/watch-site', {
           method: 'POST',
           headers: {
@@ -76,18 +94,16 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
         });
 
         if (response.ok) {
-          alert('saved');
+          alert('Successfully watching site');
+          onWatchStatusChange?.(true);
           onClose();
-
-          // setIsWatching(true);
-        } else alert('something went wrong');
-      } catch (error) {
-        console.error('Failed to watch site:', error);
-        alert('Failed to watch site');
+        } else {
+          alert('Failed to watch site');
+        }
       }
-    } else if (watchType == 'not-subscribed') {
-      // to do implement unwatching
-      alert('not implemented');
+    } catch (error) {
+      console.error('Failed to handle watch/unwatch:', error);
+      alert('Failed to process your request');
     }
   };
 
@@ -98,11 +114,11 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Shield className="w-5 h-5 text-blue-400" />
-            Watch Site Security
+            {isCurrentlyWatching ? 'Stop Watching Site' : 'Watch Site'}
           </h2>
           <button
-            title="closeButton"
             onClick={onClose}
+            title="Close dialog"
             className="text-slate-400 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
@@ -110,68 +126,15 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-4 space-y-4">
           {/* Site Info */}
           <div className="bg-slate-700/50 rounded-md p-3">
             <div className="text-sm text-slate-300 mb-1">Monitoring</div>
             <div className="text-white font-medium">{site}</div>
           </div>
 
-          {/* Watch Options */}
-          <div className="space-y-3">
-            <h3 className="text-white font-medium flex items-center gap-2">
-              <Bell className="w-4 h-4" />
-              Notification Settings
-            </h3>
-
-            {/* Not Subscribed */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="radio"
-                name="watchType"
-                value="not-subscribed"
-                checked={watchType === 'not-subscribed'}
-                onChange={(e) => setWatchType(e.target.value)}
-                className="mt-1 w-4 h-4 text-blue-500 border-slate-600 focus:ring-blue-500 focus:ring-2 bg-slate-700"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 text-white group-hover:text-blue-200 transition-colors">
-                  <BellOff className="w-4 h-4" />
-                  <span className="font-medium">Not watching</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-1">
-                  {
-                    "Only receive notifications if you're mentioned or participate in discussions."
-                  }
-                </p>
-              </div>
-            </label>
-
-            {/* Subscribed */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="radio"
-                name="watchType"
-                value="subscribed"
-                checked={watchType === 'subscribed'}
-                onChange={(e) => setWatchType(e.target.value)}
-                className="mt-1 w-4 h-4 text-blue-500 border-slate-600 focus:ring-blue-500 focus:ring-2 bg-slate-700"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 text-white group-hover:text-blue-200 transition-colors">
-                  <Bell className="w-4 h-4" />
-                  <span className="font-medium">Watch all activity</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-1">
-                  Receive notifications for all security changes and
-                  vulnerabilities detected on this site.
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* Email Input (show when subscribed or custom) */}
-          {(watchType === 'subscribed' || watchType === 'custom') && (
+          {/* Email Input - Only show when not currently watching */}
+          {!isCurrentlyWatching && (
             <div className="space-y-3">
               <h3 className="text-white font-medium flex items-center gap-2">
                 <Mail className="w-4 h-4" />
@@ -201,18 +164,32 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
             </div>
           )}
 
-          {/* Privacy Notice */}
-          <div className="bg-slate-700/30 rounded-md p-3 text-xs text-slate-400">
-            <p>
-              🔒 Your email will only be used for security notifications about
-              this site. You can unsubscribe at any time from any notification
-              email.
-            </p>
-          </div>
+          {/* Privacy Notice - Only show when not currently watching */}
+          {!isCurrentlyWatching && (
+            <div className="bg-slate-700/30 rounded-md p-3 text-xs text-slate-400">
+              <p>
+                🔒 Your email will only be used for security notifications about
+                this site, including monthly recaps, calls to action, and
+                important status changes. You can unsubscribe at any time from
+                any notification email.
+              </p>
+            </div>
+          )}
+
+          {/* Unwatch Notice - Show when currently watching */}
+          {isCurrentlyWatching && (
+            <div className="bg-slate-700/30 rounded-md p-3 text-sm text-slate-300">
+              <p>
+                You are currently receiving email notifications for this site.
+                Click the button below to stop watching this site and
+                unsubscribe from notifications.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-4 border-t border-slate-700 bg-slate-800/50">
+        <div className="flex justify-end gap-3 p-4 border-t border-slate-700">
           <button
             onClick={onClose}
             className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
@@ -221,13 +198,10 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
           </button>
           <button
             onClick={() => handleWatch(siteId)}
-            disabled={
-              (watchType === 'subscribed' || watchType === 'custom') &&
-              !email?.includes('@')
-            }
+            disabled={!isCurrentlyWatching && !email?.includes('@')}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Save Settings
+            {isCurrentlyWatching ? 'Stop Watching' : 'Start Watching'}
           </button>
         </div>
       </div>
