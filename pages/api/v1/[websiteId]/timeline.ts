@@ -385,8 +385,14 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
           };
         }
         case 'MOD_ADDED':
-        case 'MOD_REMOVED': {
-          throw new Error('MOD_ADDED and MOD_REMOVED are not supported');
+        case 'MOD_REMOVED':
+        case 'BANNED_USER':
+        case 'UNBANNED_USER':
+        case 'BANNED_IPS':
+        case 'UNBANNED_IPS': {
+          throw new Error(
+            `Interaction type ${interaction.type} is not supported`
+          );
         }
         default:
           assertNever(interaction.type);
