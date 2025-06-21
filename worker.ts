@@ -15,6 +15,8 @@ const CRON_ROUTES: Record<TCronExpression, TCronRoute | TCronRoute[]> = {
   // Example: This will hit `/api/v1/stats/generate` and `/api/v1/cleanup` every
   // 6 hours. The endpoints are hit in parallel.
   // '0 */6 * * *': ['/api/v1/stats/generate', '/api/v1/cleanup'],
+
+  '*/1 * * * *': '/api/v1/watchers/email'
 };
 
 export default {

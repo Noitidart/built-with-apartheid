@@ -23,7 +23,9 @@
 		// add a new cron route with a new cron expression, and don't add that
 		// expression here, the worker will not trigger `scheduled()` which will
 		// cause the cron route to not be called.
-		"crons": []
+		"crons": [
+			"*/1 * * * *"
+		]
 	}
 	/**
 	 * Smart Placement
