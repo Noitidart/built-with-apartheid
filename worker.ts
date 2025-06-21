@@ -15,6 +15,8 @@ const CRON_ROUTES: Record<TCronExpression, TCronRoute | TCronRoute[]> = {
   // Example: This will hit `/api/v1/stats/generate` and `/api/v1/cleanup` every
   // 6 hours. The endpoints are hit in parallel.
   // '0 */6 * * *': ['/api/v1/stats/generate', '/api/v1/cleanup'],
+
+  '*/1 * * * *': '/api/v1/watchers/email'
 };
 
 export default {
@@ -41,11 +43,12 @@ export default {
     ctx.waitUntil(
       Promise.allSettled(
         routes.map(function callCronRoute(route) {
+          console.log(route);
           return openNextWorker.fetch(
             // Request constructor requires a full URL, but since we're calling
             // openNextWorker.fetch() internally, the domain doesn't matter -
             // only the path is used for routing.
-            new Request(`http://localhost${route}`, {
+            new Request(route, {
               // POST is the most common method for cron routes.
               method: 'POST',
               headers: {
