@@ -15,6 +15,8 @@ const CRON_ROUTES: Record<TCronExpression, TCronRoute | TCronRoute[]> = {
   // Example: This will hit `/api/v1/stats/generate` and `/api/v1/cleanup` every
   // 6 hours. The endpoints are hit in parallel.
   // '0 */6 * * *': ['/api/v1/stats/generate', '/api/v1/cleanup'],
+
+  '*/10 * * * *': '/api/v1/watchers/email'
 };
 
 export default {
@@ -45,12 +47,12 @@ export default {
           // The worker URL can be provided via environment variable or constructed
           const workerUrl = 'https://builtwithapartheid.com';
           return fetch(workerUrl + route, {
-              method: 'POST',
-              headers: {
-                // All Cron routes should check for this secret or throw 401,
-                // this ensures no other actors can trigger cron routes.
-                'x-cron-secret': env.CRON_SECRET
-              }
+            method: 'POST',
+            headers: {
+              // All Cron routes should check for this secret or throw 401,
+              // this ensures no other actors can trigger cron routes.
+              'x-cron-secret': env.CRON_SECRET
+            }
           });
         })
       )
