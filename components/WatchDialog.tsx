@@ -198,11 +198,21 @@ const WatchDialog: React.FC<WatchDialogProps> = ({
           </button>
           <button
             onClick={() => handleWatch(siteId)}
+            // onClick={() => tryEmailSend(email, site)}
             disabled={!isCurrentlyWatching && !email?.includes('@')}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isCurrentlyWatching ? 'Stop Watching' : 'Start Watching'}
           </button>
+
+          {/* <button
+            // onClick={() => handleWatch(siteId)}
+            onClick={() => tryEmailSend(email, site)}
+            disabled={!isCurrentlyWatching && !email?.includes('@')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            send email
+          </button> */}
         </div>
       </div>
     </div>

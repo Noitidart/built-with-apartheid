@@ -18,8 +18,8 @@ export async function sendUnethicalSiteAlert(
   siteUrl: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const result = await resend.emails.send({
+      from: 'BWA <builtWithApartheid@resend.dev>',
       to: userEmail,
       subject: `Ethics Alert: ${siteUrl} flagged`,
       react: ApartheidEmailAlert({
@@ -32,6 +32,7 @@ export async function sendUnethicalSiteAlert(
         unsubscribeUrl: ''
       })
     });
+    return result;
   } catch (error) {
     console.error(
       `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,
@@ -47,8 +48,8 @@ export async function sendTechnologyStackEmailAlert(
   siteUrl: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const result = await resend.emails.send({
+      from: 'BWA <builtWithApartheid@resend.dev>',
       to: userEmail,
       subject: `Ethics Alert: ${siteUrl} flagged`,
       react: TechnologyChangeAlert({
@@ -60,6 +61,7 @@ export async function sendTechnologyStackEmailAlert(
         unsubscribeUrl: ''
       })
     });
+    return result;
   } catch (error) {
     console.error(
       `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,
@@ -75,8 +77,8 @@ export async function sendSecurityDigestEmailAlert(
   siteUrl: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const result = await resend.emails.send({
+      from: 'BWA <builtWithApartheid@resend.dev>',
       to: userEmail,
       subject: `Ethics Alert: ${siteUrl} flagged`,
       react: SecurityDigestEmail({
@@ -96,6 +98,7 @@ export async function sendSecurityDigestEmailAlert(
         unsubscribeUrl: ''
       })
     });
+    return result;
   } catch (error) {
     console.error(
       `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,
@@ -111,8 +114,8 @@ export async function sendSecurityStatusChangeAlert(
   siteUrl: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const result = await resend.emails.send({
+      from: 'BWA <builtWithApartheid@resend.dev>',
       to: userEmail,
       subject: `Ethics Alert: ${siteUrl} flagged`,
       react: SecurityStatusChangeAlert({
@@ -125,6 +128,7 @@ export async function sendSecurityStatusChangeAlert(
         unsubscribeUrl: ''
       })
     });
+    return result;
   } catch (error) {
     console.error(
       `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,
@@ -140,8 +144,8 @@ export async function sendEnhancedEmailAlert(
   siteUrl: string
 ) {
   try {
-    await resend.emails.send({
-      from: 'ethics-alerts@yourdomain.com',
+    const result = await resend.emails.send({
+      from: 'BWA <builtWithApartheid@resend.dev>',
       to: userEmail,
       subject: `Ethics Alert: ${siteUrl} flagged`,
       react: EnhancedSecurityAlert({
@@ -154,6 +158,7 @@ export async function sendEnhancedEmailAlert(
         unsubscribeUrl: ''
       })
     });
+    return result;
   } catch (error) {
     console.error(
       `Failed to send email to ${userEmail} ${userName} about ${siteUrl}`,

@@ -1,4 +1,5 @@
-import { ApartheidEmailAlert } from '@/components/ApartheidEmailAlert';
+// import { ApartheidEmailAlert } from '@/components/ApartheidEmailAlert';
+import { sendEnhancedEmailAlert } from '@/lib/email';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
@@ -55,28 +56,29 @@ export default async function handleSendSingleEmail(req: NextRequest) {
   console.log('before sending email about ' + siteUrl + ' to ' + userEmail);
   // Send email
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'Acme <onboarding@resend.dev>',
-      to: userEmail,
-      subject: 'Monthly Apartheid Recap',
-      react: ApartheidEmailAlert({
-        siteUrl,
-        userName,
-        severityLevel: 'Critical',
-        vulnerabilityName: 'Israeli technology',
-        detectedTechnology: 'Israeli technology',
-        firstDetectedDate: new Date().toLocaleString(),
-        unsubscribeUrl: ''
-      })
-    });
+    const result = await sendEnhancedEmailAlert(userEmail, userName, siteUrl);
+    // const { data, error } = await resend.emails.send({
+    //   from: 'Acme <onboarding@resend.dev>',
+    //   to: userEmail,
+    //   subject: 'Monthly Apartheid Recap',
+    //   react: ApartheidEmailAlert({
+    //     siteUrl,
+    //     userName,
+    //     severityLevel: 'Critical',
+    //     vulnerabilityName: 'Israeli technology',
+    //     detectedTechnology: 'Israeli technology',
+    //     firstDetectedDate: new Date().toLocaleString(),
+    //     unsubscribeUrl: ''
+    //   })
+    // });
 
-    if (error) {
-      throw error;
+    if (result?.error) {
+      throw result.error;
     }
     console.log('email id: ');
     console.log(data);
 
-    return new Response(JSON.stringify({ data }), {
+    return new Response(JSON.stringify({ data: data ? data : result?.data }), {
       status: 200
     });
   } catch (error) {

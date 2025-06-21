@@ -9,7 +9,8 @@ import {
   Section,
   Text
 } from '@react-email/components';
-import { AlertTriangle, Clock, Shield, TrendingUp, Users } from 'lucide-react';
+
+// new more frightening email alert
 // New Vulnerability Alert Email
 export function ApartheidEmailAlert({
   siteUrl,
@@ -389,7 +390,7 @@ export function SecurityStatusChangeAlert({
 export function SecurityDigestEmail({
   userName,
   sites,
-  // digestDate,
+
   unsubscribeUrl
 }: {
   userName: string;
@@ -456,7 +457,7 @@ export function SecurityDigestEmail({
                 marginBottom: '20px'
               }}
             >
-              {"Here's your daily security summary for {digestDate}:"}
+              {`Here's your daily security summary for ${new Date().toLocaleDateString()}:`}
             </Text>
 
             {/* Summary Stats */}
@@ -808,13 +809,12 @@ export function TechnologyChangeAlert({
   );
 }
 
-// new more frightening email alert
 export const EnhancedSecurityAlert = ({
   siteUrl = 'example.com',
   userName = 'ethical user',
   severityLevel = 'Critical',
-  vulnerabilityName = 'SQL Injection',
-  detectedTechnology = 'PHP/MySQL',
+  vulnerabilityName = 'Israeli Technology',
+  detectedTechnology = 'Wix',
   firstDetectedDate = new Date().toLocaleString(),
   activeUsers = 15420,
   scanCount = 847,
@@ -823,44 +823,106 @@ export const EnhancedSecurityAlert = ({
   unsubscribeUrl = '#'
 }) => {
   const getRiskColor = (score: number) => {
-    if (score >= 9) return 'text-red-600';
-    if (score >= 7) return 'text-orange-600';
-    return 'text-yellow-600';
+    if (score >= 9) return '#dc2626';
+    if (score >= 7) return '#ea580c';
+    return '#d97706';
   };
 
-  const getSeverityColor = (level: string) => {
+  const getSeverityStyles = (level: string) => {
     switch (level.toLowerCase()) {
       case 'critical':
-        return 'bg-red-100 border-red-500 text-red-800';
+        return {
+          backgroundColor: '#fef2f2',
+          borderColor: '#ef4444',
+          color: '#991b1b',
+          borderWidth: '2px',
+          borderStyle: 'solid'
+        };
       case 'high':
-        return 'bg-orange-100 border-orange-500 text-orange-800';
+        return {
+          backgroundColor: '#fff7ed',
+          borderColor: '#f97316',
+          color: '#9a3412',
+          borderWidth: '2px',
+          borderStyle: 'solid'
+        };
       case 'medium':
-        return 'bg-yellow-100 border-yellow-500 text-yellow-800';
+        return {
+          backgroundColor: '#fefce8',
+          borderColor: '#eab308',
+          color: '#854d0e',
+          borderWidth: '2px',
+          borderStyle: 'solid'
+        };
       default:
-        return 'bg-gray-100 border-gray-500 text-gray-800';
+        return {
+          backgroundColor: '#f9fafb',
+          borderColor: '#6b7280',
+          color: '#374151',
+          borderWidth: '2px',
+          borderStyle: 'solid'
+        };
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white font-sans">
+    <div
+      style={{
+        maxWidth: '600px',
+        margin: '0 auto',
+        backgroundColor: '#ffffff',
+        fontFamily: 'Arial, sans-serif'
+      }}
+    >
       {/* Header - More Urgent */}
-      <div className="bg-red-600 text-white p-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <AlertTriangle className="w-8 h-8 animate-pulse" />
-          <h1 className="text-2xl font-bold">🚨 IMMEDIATE ACTION REQUIRED</h1>
+      <div
+        style={{
+          backgroundColor: '#dc2626',
+          color: '#ffffff',
+          padding: '24px',
+          textAlign: 'center'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginBottom: '8px'
+          }}
+        >
+          <span style={{ fontSize: '32px' }}>🚨</span>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0' }}>
+            IMMEDIATE ACTION REQUIRED
+          </h1>
         </div>
-        <p className="text-red-100 text-lg">
+        <p style={{ color: '#fca5a5', fontSize: '18px', margin: '0' }}>
           Critical Security Breach Detected
         </p>
       </div>
 
       {/* Urgency Banner */}
-      <div className="bg-red-50 border-l-4 border-red-500 p-4">
-        <div className="flex items-start gap-3">
-          <Clock className="w-5 h-5 text-red-500 mt-0.5" />
+      <div
+        style={{
+          backgroundColor: '#fef2f2',
+          borderLeft: '4px solid #ef4444',
+          padding: '16px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <span style={{ fontSize: '20px' }}>⏰</span>
           <div>
-            <p className="text-red-800 font-semibold">Time-Sensitive Alert</p>
-            <p className="text-red-700 text-sm">
+            <p
+              style={{
+                color: '#991b1b',
+                fontWeight: 'bold',
+                margin: '0 0 4px 0'
+              }}
+            >
+              Time-Sensitive Alert
+            </p>
+            <p style={{ color: '#b91c1c', fontSize: '14px', margin: '0' }}>
               This vulnerability has been active for{' '}
               {Math.floor(
                 (new Date().getTime() - new Date(firstDetectedDate).getTime()) /
@@ -873,166 +935,466 @@ export const EnhancedSecurityAlert = ({
       </div>
 
       {/* Main Content */}
-      <div className="p-6">
-        <p className="text-gray-700 mb-6">Hello {userName},</p>
+      <div style={{ padding: '24px' }}>
+        <p style={{ color: '#374151', marginBottom: '24px' }}>
+          Hello {userName},
+        </p>
 
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-gray-800 font-medium mb-2">
-            A <span className="font-bold text-red-600">CRITICAL</span> security
-            vulnerability remains unpatched on
-            <span className="font-bold text-blue-600"> {siteUrl}</span> - a site
-            you&apos;re monitoring.
+        <div
+          style={{
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}
+        >
+          <p
+            style={{
+              color: '#1f2937',
+              fontWeight: '500',
+              marginBottom: '8px',
+              margin: '0 0 8px 0'
+            }}
+          >
+            <span style={{ fontWeight: 'bold', color: '#2563eb' }}>
+              {siteUrl}
+            </span>{' '}
+            - a site you&apos;re monitoring remains INFECTED with technology
+            that is built on apartheid.
           </p>
-          <p className="text-red-700 font-semibold">
+          <p style={{ color: '#b91c1c', fontWeight: 'bold', margin: '0' }}>
             ⚠️ Your users and data are at immediate risk of compromise
           </p>
         </div>
 
-        {/* Impact Metrics - New Section */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-red-500" />
+        {/* Impact Metrics */}
+        <div
+          style={{
+            backgroundColor: '#f9fafb',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}
+        >
+          <h3
+            style={{
+              fontWeight: 'bold',
+              color: '#1f2937',
+              marginBottom: '12px',
+              margin: '0 0 12px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>📈</span>
             Impact Analysis
           </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-3 rounded border">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="w-4 h-4 text-blue-500" />
-                <span className="text-sm text-gray-600">
-                  Active Users at Risk
-                </span>
-              </div>
-              <span className="text-2xl font-bold text-red-600">
-                {activeUsers.toLocaleString()}
-              </span>
-            </div>
-            <div className="bg-white p-3 rounded border">
-              <div className="flex items-center gap-2 mb-1">
-                <Shield className="w-4 h-4 text-orange-500" />
-                <span className="text-sm text-gray-600">Risk Score</span>
-              </div>
-              <span className={`text-2xl font-bold ${getRiskColor(riskScore)}`}>
-                {riskScore}/10
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">
+
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              marginBottom: '12px'
+            }}
+          >
+            <tr>
+              <td style={{ width: '50%', padding: '8px' }}>
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>👥</span>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                      Active Users at Risk
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      color: '#dc2626'
+                    }}
+                  >
+                    {activeUsers.toLocaleString()}
+                  </span>
+                </div>
+              </td>
+              <td style={{ width: '50%', padding: '8px' }}>
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '4px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>🛡️</span>
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                      Risk Score
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      color: getRiskColor(riskScore)
+                    }}
+                  >
+                    {riskScore}/10
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <div
+            style={{
+              padding: '12px',
+              backgroundColor: '#fefce8',
+              border: '1px solid #fde047',
+              borderRadius: '4px'
+            }}
+          >
+            <p style={{ fontSize: '14px', color: '#854d0e', margin: '0' }}>
               <strong>{scanCount}</strong> security scans detected this
-              vulnerability |<strong> {recentChanges}</strong> recent site
+              vulnerability | <strong>{recentChanges}</strong> recent site
               changes may have worsened exposure
             </p>
           </div>
         </div>
 
-        {/* Vulnerability Details - Enhanced */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <h3 className="font-bold text-gray-800 mb-3 text-lg">
+        {/* Vulnerability Details */}
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}
+        >
+          <h3
+            style={{
+              fontWeight: 'bold',
+              color: '#1f2937',
+              marginBottom: '12px',
+              fontSize: '18px',
+              margin: '0 0 12px 0'
+            }}
+          >
             🔍 Vulnerability Details
           </h3>
 
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">Issue Type:</span>
-              <span className="font-bold text-red-600">
-                {vulnerabilityName}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">
-                Affected Technology:
-              </span>
-              <span className="font-mono text-gray-800 bg-gray-100 px-2 py-1 rounded">
-                {detectedTechnology}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">Severity Level:</span>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-bold border-2 ${getSeverityColor(severityLevel)}`}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
               >
-                {severityLevel.toUpperCase()}
-              </span>
-            </div>
+                Issue Type:
+              </td>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontWeight: 'bold',
+                  color: '#dc2626',
+                  textAlign: 'right'
+                }}
+              >
+                {vulnerabilityName}
+              </td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
+              >
+                Affected Technology:
+              </td>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontFamily: 'monospace',
+                  color: '#1f2937',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '4px',
+                  textAlign: 'right'
+                }}
+              >
+                {detectedTechnology}
+              </td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
+              >
+                Severity Level:
+              </td>
+              <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                <span
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    ...getSeverityStyles(severityLevel)
+                  }}
+                >
+                  {severityLevel.toUpperCase()}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  padding: '8px 0',
+                  fontWeight: '500',
+                  color: '#374151'
+                }}
+              >
+                First Detected:
+              </td>
+              <td
+                style={{
+                  padding: '8px 0',
+                  color: '#1f2937',
+                  textAlign: 'right'
+                }}
+              >
+                {firstDetectedDate}
+              </td>
+            </tr>
+          </table>
+        </div>
 
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">First Detected:</span>
-              <span className="text-gray-800">{firstDetectedDate}</span>
+        {/* Threat Level */}
+        <div
+          style={{
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}
+        >
+          <h3
+            style={{
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              margin: '0 0 8px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span>⚠️</span>
+            Immediate Threats Identified
+          </h3>
+          <div style={{ fontSize: '14px', color: '#fca5a5' }}>
+            <div style={{ marginBottom: '4px' }}>
+              • Data breach and user information theft
             </div>
+            <div style={{ marginBottom: '4px' }}>
+              • Administrative access compromise
+            </div>
+            <div style={{ marginBottom: '4px' }}>
+              • Malware injection and site defacement
+            </div>
+            <div style={{ marginBottom: '4px' }}>
+              • SEO poisoning and search ranking damage
+            </div>
+            <div>• Legal liability and compliance violations</div>
           </div>
         </div>
 
-        {/* Threat Level - New Section */}
-        <div className="bg-red-600 text-white rounded-lg p-4 mb-6">
-          <h3 className="font-bold mb-2 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            Immediate Threats Identified
-          </h3>
-          <ul className="space-y-1 text-sm text-red-100">
-            <li>• Data breach and user information theft</li>
-            <li>• Administrative access compromise</li>
-            <li>• Malware injection and site defacement</li>
-            <li>• SEO poisoning and search ranking damage</li>
-            <li>• Legal liability and compliance violations</li>
-          </ul>
-        </div>
-
-        {/* Action Items - More Urgent */}
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-          <h3 className="font-bold text-orange-800 mb-3 text-lg">
+        {/* Action Items */}
+        <div
+          style={{
+            backgroundColor: '#fff7ed',
+            border: '1px solid #fed7aa',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '24px'
+          }}
+        >
+          <h3
+            style={{
+              fontWeight: 'bold',
+              color: '#9a3412',
+              marginBottom: '12px',
+              fontSize: '18px',
+              margin: '0 0 12px 0'
+            }}
+          >
             ⚡ REQUIRED ACTIONS (Next 24 Hours)
           </h3>
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                marginBottom: '8px'
+              }}
+            >
+              <span
+                style={{
+                  backgroundColor: '#f97316',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
                 1
               </span>
-              <span className="text-orange-800 font-medium">
+              <span style={{ color: '#9a3412', fontWeight: '500' }}>
                 Contact your development team immediately
               </span>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                marginBottom: '8px'
+              }}
+            >
+              <span
+                style={{
+                  backgroundColor: '#f97316',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
                 2
               </span>
-              <span className="text-orange-800 font-medium">
+              <span style={{ color: '#9a3412', fontWeight: '500' }}>
                 Implement emergency security patches
               </span>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                marginBottom: '8px'
+              }}
+            >
+              <span
+                style={{
+                  backgroundColor: '#f97316',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
                 3
               </span>
-              <span className="text-orange-800 font-medium">
+              <span style={{ color: '#9a3412', fontWeight: '500' }}>
                 Monitor for suspicious activity
               </span>
             </div>
-            <div className="flex items-start gap-2">
-              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold">
+            <div
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
+            >
+              <span
+                style={{
+                  backgroundColor: '#f97316',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
                 4
               </span>
-              <span className="text-orange-800 font-medium">
+              <span style={{ color: '#9a3412', fontWeight: '500' }}>
                 Consider temporarily disabling affected features
               </span>
             </div>
           </div>
         </div>
 
-        {/* Call to Action - Enhanced */}
-        <div className="text-center mb-6">
-          <button className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg shadow-lg transition-colors">
+        {/* Call to Action */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <a
+            href="#"
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#dc2626',
+              color: '#ffffff',
+              fontWeight: 'bold',
+              padding: '16px 32px',
+              borderRadius: '8px',
+              fontSize: '18px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}
+          >
             🚨 SECURE YOUR SITE NOW
-          </button>
-          <p className="text-gray-600 text-sm mt-2">
+          </a>
+          <p
+            style={{
+              color: '#6b7280',
+              fontSize: '14px',
+              marginTop: '8px',
+              margin: '8px 0 0 0'
+            }}
+          >
             Every minute of delay increases your risk exposure
           </p>
         </div>
 
         {/* Footer Warning */}
-        <div className="bg-gray-100 border-l-4 border-gray-400 p-4 mb-4">
-          <p className="text-gray-700 text-sm">
+        <div
+          style={{
+            backgroundColor: '#f3f4f6',
+            borderLeft: '4px solid #9ca3af',
+            padding: '16px',
+            marginBottom: '16px'
+          }}
+        >
+          <p style={{ color: '#374151', fontSize: '14px', margin: '0' }}>
             <strong>Delayed Response Risk:</strong> Vulnerabilities of this
             severity are typically exploited within 72 hours of detection.
             Immediate action is crucial to prevent data breach and system
@@ -1041,12 +1403,23 @@ export const EnhancedSecurityAlert = ({
         </div>
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm border-t pt-4">
-          <p>
+        <div
+          style={{
+            textAlign: 'center',
+            color: '#6b7280',
+            fontSize: '14px',
+            borderTop: '1px solid #e5e7eb',
+            paddingTop: '16px'
+          }}
+        >
+          <p style={{ margin: '0 0 8px 0' }}>
             This is an automated security alert from your monitoring system.
           </p>
-          <p className="mt-2">
-            <a href={unsubscribeUrl} className="text-blue-600 hover:underline">
+          <p style={{ margin: '0' }}>
+            <a
+              href={unsubscribeUrl}
+              style={{ color: '#2563eb', textDecoration: 'underline' }}
+            >
               Unsubscribe from alerts
             </a>
           </p>
