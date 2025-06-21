@@ -41,24 +41,17 @@ export default {
     ctx.waitUntil(
       Promise.allSettled(
         routes.map(function callCronRoute(route) {
-          console.log(route);
-
-          return openNextWorker.fetch(
-            // Request constructor requires a full URL, but since we're calling
-            // openNextWorker.fetch() internally, the domain doesn't matter -
-            // only the path is used for routing.
-            new Request(`http://localhost${route}`, {
-              // POST is the most common method for cron routes.
+          // Make a real HTTP request for better observability in logs
+          // The worker URL can be provided via environment variable or constructed
+          const workerUrl = 'https://builtwithapartheid.com';
+          return fetch(workerUrl + route, {
               method: 'POST',
               headers: {
                 // All Cron routes should check for this secret or throw 401,
                 // this ensures no other actors can trigger cron routes.
                 'x-cron-secret': env.CRON_SECRET
               }
-            }),
-            env,
-            ctx
-          );
+          });
         })
       )
     );
