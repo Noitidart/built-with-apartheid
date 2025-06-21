@@ -99,151 +99,162 @@ function ActivityContent(_props: TActivityContentProps) {
 
   return (
     <div className="container mx-auto">
-      {/* View Mode Tabs */}
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => updateUrlParams({ view: 'timeline' })}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              viewMode === 'timeline'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Timeline
-          </button>
-          <button
-            onClick={() => updateUrlParams({ view: 'ip-groups' })}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              viewMode === 'ip-groups'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            IP Groups
-          </button>
-          <button
-            onClick={() => updateUrlParams({ view: 'user-groups' })}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              viewMode === 'user-groups'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            User Groups
-          </button>
-        </nav>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div>
-          <label htmlFor="timeRange" className="block text-sm font-medium mb-1">
-            Time Range
-          </label>
-          <select
-            id="timeRange"
-            value={timeRange}
-            onChange={handleTimeRangeChange}
-            className="px-4 py-2 border rounded-lg"
-          >
-            <option value="1h">Last Hour</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="type" className="block text-sm font-medium mb-1">
-            Activity Type
-          </label>
-          <select
-            id="type"
-            value={interactionType}
-            onChange={handleTypeChange}
-            className="px-4 py-2 border rounded-lg"
-          >
-            <option value="all">All Activities</option>
-            <option value="SCAN">Scans</option>
-            <option value="POST">Posts</option>
-            <option value="MILESTONE">Milestones</option>
-            <option value="MOD_ADDED">Mod Added</option>
-            <option value="MOD_REMOVED">Mod Removed</option>
-            <option value="BANNED_USER">User Bans</option>
-            <option value="UNBANNED_USER">User Unbans</option>
-            <option value="BANNED_IPS">IP Bans</option>
-            <option value="UNBANNED_IPS">IP Unbans</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
       {activityQuery.data && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500">
-              Total Activities
-            </h3>
-            <p className="text-2xl font-bold">
-              {activityQuery.data.stats.totalInteractions}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
-            <p className="text-2xl font-bold">
-              {activityQuery.data.stats.activeUsers}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500">Active IPs</h3>
-            <p className="text-2xl font-bold">
-              {activityQuery.data.stats.activeIps}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500">
-              Suspicious Activities
-            </h3>
-            <p className="text-2xl font-bold text-red-600">
-              {activityQuery.data.stats.suspiciousActivities}
-            </p>
-          </div>
-        </div>
-      )}
+        <>
+          {/* Filters */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            <div>
+              <label
+                htmlFor="timeRange"
+                className="block text-sm font-medium mb-1"
+              >
+                Time Range
+              </label>
+              <select
+                id="timeRange"
+                value={timeRange}
+                onChange={handleTimeRangeChange}
+                className="px-4 py-2 border rounded-lg"
+              >
+                <option value="1h">Last Hour</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+              </select>
+            </div>
 
-      {/* Suspicious Activity Alerts */}
-      {activityQuery.data &&
-        activityQuery.data.suspiciousActivities.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <h3 className="text-lg font-semibold text-red-800 mb-2">
-              ⚠️ Suspicious Activity Detected
-            </h3>
-            <ul className="space-y-2">
-              {activityQuery.data.suspiciousActivities.map((activity) => (
-                <li key={activity.id} className="text-sm text-red-700">
-                  <strong>{activity.type}:</strong> {activity.description}
-                  {activity.user && (
-                    <Link
-                      href={`/mods/users?search=${activity.user.id}`}
-                      className="ml-2 text-blue-600 hover:underline"
-                    >
-                      View User
-                    </Link>
-                  )}
-                  {activity.ip && (
-                    <Link
-                      href={`/mods/ips?search=${activity.ip.value}`}
-                      className="ml-2 text-blue-600 hover:underline"
-                    >
-                      View IP
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium mb-1">
+                Activity Type
+              </label>
+              <select
+                id="type"
+                value={interactionType}
+                onChange={handleTypeChange}
+                className="px-4 py-2 border rounded-lg"
+              >
+                <option value="all">All Activities</option>
+                <option value="SCAN">Scans</option>
+                <option value="POST">Posts</option>
+                <option value="MILESTONE">Milestones</option>
+                <option value="MOD_ADDED">Mod Added</option>
+                <option value="MOD_REMOVED">Mod Removed</option>
+                <option value="BANNED_USER">User Bans</option>
+                <option value="UNBANNED_USER">User Unbans</option>
+                <option value="BANNED_IPS">IP Bans</option>
+                <option value="UNBANNED_IPS">IP Unbans</option>
+              </select>
+            </div>
           </div>
-        )}
+
+          {/* Stats Overview */}
+          {activityQuery.data && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">
+                  Total Activities
+                </h3>
+                <p className="text-2xl font-bold">
+                  {activityQuery.data.stats.totalInteractions}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">
+                  Active Users
+                </h3>
+                <p className="text-2xl font-bold">
+                  {activityQuery.data.stats.activeUsers}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">
+                  Active IPs
+                </h3>
+                <p className="text-2xl font-bold">
+                  {activityQuery.data.stats.activeIps}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-500">
+                  Suspicious Activities
+                </h3>
+                <p className="text-2xl font-bold text-red-600">
+                  {activityQuery.data.stats.suspiciousActivities}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Suspicious Activity Alerts */}
+          {activityQuery.data &&
+            activityQuery.data.suspiciousActivities.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  ⚠️ Suspicious Activity Detected
+                </h3>
+                <ul className="space-y-2">
+                  {activityQuery.data.suspiciousActivities.map((activity) => (
+                    <li key={activity.id} className="text-sm text-red-700">
+                      <strong>{activity.type}:</strong> {activity.description}
+                      {activity.user && (
+                        <Link
+                          href={`/mods/users?search=${activity.user.id}`}
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          View User
+                        </Link>
+                      )}
+                      {activity.ip && (
+                        <Link
+                          href={`/mods/ips?search=${activity.ip.value}`}
+                          className="ml-2 text-blue-600 hover:underline"
+                        >
+                          View IP
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {/* View Mode Tabs */}
+          <div className="mb-6 border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => updateUrlParams({ view: 'timeline' })}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  viewMode === 'timeline'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Timeline
+              </button>
+              <button
+                onClick={() => updateUrlParams({ view: 'ip-groups' })}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  viewMode === 'ip-groups'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                IP Groups
+              </button>
+              <button
+                onClick={() => updateUrlParams({ view: 'user-groups' })}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  viewMode === 'user-groups'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                User Groups
+              </button>
+            </nav>
+          </div>
+        </>
+      )}
 
       {/* Content based on view mode */}
       {viewMode === 'timeline' && (
