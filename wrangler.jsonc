@@ -5,7 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "built-with-apartheid",
-	"main": ".open-next/worker.js",
+	"main": "worker.ts",
 	"compatibility_date": "2025-03-01",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -17,6 +17,13 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"triggers": {
+		// This array should be the keys from CRON_ROUTES in `worker.ts`. If you
+		// add a new cron route with a new cron expression, and don't add that
+		// expression here, the worker will not trigger `scheduled()` which will
+		// cause the cron route to not be called.
+		"crons": []
 	}
 	/**
 	 * Smart Placement
