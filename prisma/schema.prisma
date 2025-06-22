@@ -41,6 +41,8 @@ model User {
   ips                   Ip[]
   // (Many-to-many) One user can be target of many interactions WHILE one interaction can target many users
   targetForInteractions Interaction[] @relation("InteractionTargetUsers")
+  // (Many-to-many-optional) One user can watch zero or many websites WHILE one website can be watched by zero or many users
+  watchedWebsites       Website[]     @relation("WatchedWebsites")
 }
 
 model Website {
@@ -59,6 +61,8 @@ model Website {
   posts        Post[]
   // (One-to-many-optional) One website can have zero or many milestones WHILE one milestone can belong to zero or one website
   milestones   Milestone[]
+  // (Many-to-many-optional) One website can be watched by zero or many users WHILE one user can watch zero or many websites
+  watchers     User[]        @relation("WatchedWebsites")
 }
 
 model Ip {
@@ -166,6 +170,8 @@ enum InteractionType {
   UNBANNED_USER
   BANNED_IPS
   UNBANNED_IPS
+  WATCHED
+  UNWATCHED
 }
 
 model Post {

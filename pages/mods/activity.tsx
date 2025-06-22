@@ -143,6 +143,8 @@ function ActivityContent(_props: TActivityContentProps) {
                 <option value="UNBANNED_USER">User Unbans</option>
                 <option value="BANNED_IPS">IP Bans</option>
                 <option value="UNBANNED_IPS">IP Unbans</option>
+                <option value="WATCHED">Website Watches</option>
+                <option value="UNWATCHED">Website Unwatches</option>
               </select>
             </div>
           </div>
@@ -954,6 +956,10 @@ function getInteractionTypeStyle(type: string) {
     case 'UNBANNED_USER':
     case 'UNBANNED_IPS':
       return 'bg-orange-100 text-orange-800';
+    case 'WATCHED':
+      return 'bg-indigo-100 text-indigo-800';
+    case 'UNWATCHED':
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }

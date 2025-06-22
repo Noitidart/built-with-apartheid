@@ -3,6 +3,7 @@ import Button from '@/components/Button';
 import CompanyList from '@/components/CompanyList';
 import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
+import WatchButton from '@/components/WatchButton';
 import type { CompanyId } from '@/constants/companies';
 import useForceRender from '@/hooks/useForceRender';
 import {
@@ -295,6 +296,25 @@ function UrlPage() {
               errorUpdateCount={scanQuery.errorUpdateCount}
             />
           )}
+
+          {/* Watch Button - Show when we have scan results */}
+          {scanQuery.isSuccess &&
+            scanQuery.data &&
+            !scanQuery.isFetching &&
+            scanQuery.data.me && (
+              <motion.div
+                key="watch-button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <WatchButton
+                  me={scanQuery.data.me}
+                  website={scanQuery.data.website}
+                />
+              </motion.div>
+            )}
 
           {scanQuery.isSuccess &&
             scanQuery.data &&
