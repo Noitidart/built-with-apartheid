@@ -3,7 +3,7 @@ import { memo } from 'react';
 
 type TSpinnerProps = {
   size?: 'sm' | 'md' | 'lg';
-  color?: 'white' | 'currentColor' | 'blue';
+  color?: 'white' | 'currentColor' | 'blue' | 'black';
   className?: string;
 };
 
@@ -16,7 +16,8 @@ const sizeClasses = {
 const colorClasses = {
   white: 'text-white',
   currentColor: 'text-current',
-  blue: 'text-blue-500'
+  blue: 'text-blue-500',
+  black: 'text-gray-700 dark:text-gray-300'
 };
 
 const Spinner = memo(function Spinner(initialProps: TSpinnerProps) {
