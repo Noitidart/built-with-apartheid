@@ -8,6 +8,7 @@ import type { TScan } from '@/types/scan';
 import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
 import type { PrismaClient } from '@prisma/client';
+import delay from 'delay';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
@@ -109,6 +110,8 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  await delay(2_000);
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -136,7 +139,7 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
     await Promise.all([
       // Main interactions query with all needed fields
       prisma.interaction.findMany({
-        where: { 
+        where: {
           websiteId,
           type: {
             notIn: ['WATCHED', 'UNWATCHED']

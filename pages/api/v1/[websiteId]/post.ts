@@ -7,6 +7,8 @@ import {
   type TPostInteraction
 } from '@/types/interaction';
 import type { TPost } from '@/types/post';
+import { emailNewPostToWatchers } from '@/utils/email-watchers/emailNewPostToWatchers';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import type { PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -155,6 +157,16 @@ const newPostHandler = withPrisma(async function newPostHandler(
     prisma,
     mostRecentPostInteraction: interaction
   });
+
+  // Send email notifications to watchers in the background
+  getCloudflareContext().ctx.waitUntil(
+    emailNewPostToWatchers({
+      prisma,
+      interactionId: interaction.id
+    }).catch((error) => {
+      console.error('Failed to send new post email:', error);
+    })
+  );
 
   // Set rate limit for next post
   {

@@ -11,6 +11,7 @@ import {
   hasFormError
 } from '@/lib/response/response-error-utils';
 import { isNonNullish } from '@/lib/typescript';
+import { useRetriggerDeepLinkScroll } from '@/lib/useRetriggerDeepLinkScroll';
 import type { TScanRequestBody, TScanResponseData } from '@/pages/api/v1/scan';
 import {
   useQuery,
@@ -27,6 +28,9 @@ import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 
 function UrlPage() {
+  const { waitingToScrollModal } = useRetriggerDeepLinkScroll(
+    'Waiting for post load...'
+  );
   const router = useRouter();
   const urlInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -35,8 +39,8 @@ function UrlPage() {
     typeof router.query.url === 'string'
       ? router.query.url?.toLocaleLowerCase()
       : Array.isArray(router.query.url)
-      ? router.query.url.join('/').toLowerCase()
-      : undefined;
+        ? router.query.url.join('/').toLowerCase()
+        : undefined;
 
   const shouldScanBypassCache = useRef(false);
   const scanQuery = useQuery({
@@ -180,6 +184,8 @@ function UrlPage() {
       </header>
 
       <main className="flex flex-col gap-10 w-full max-w-4xl mx-auto">
+        {waitingToScrollModal}
+
         {/* Scan Input - Always visible */}
         <div className="w-full">
           <form onSubmit={goToUrlPageOnSubmit} className="mt-4: sm:mt-8">
@@ -827,11 +833,11 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
                 {hasFormError('websiteErrors.serviceUnavailable', data)
                   ? 'The website is currently down. Please try again soon.'
                   : hasFormError(
-                      'scanErrors.freshScanDeniedAsLastScanIsTooRecent',
-                      data
-                    )
-                  ? 'You tried to get a fresh scan, but the latest scan is less than 10 minutes ago so it was denied.'
-                  : "We don't re-scan by default unless it's been over 7 days, as most likely nothing changed."}
+                        'scanErrors.freshScanDeniedAsLastScanIsTooRecent',
+                        data
+                      )
+                    ? 'You tried to get a fresh scan, but the latest scan is less than 10 minutes ago so it was denied.'
+                    : "We don't re-scan by default unless it's been over 7 days, as most likely nothing changed."}
               </p>
             </div>
 
