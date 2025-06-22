@@ -24,7 +24,7 @@
 		// expression here, the worker will not trigger `scheduled()` which will
 		// cause the cron route to not be called.
 		"crons": [
-			"*/10 * * * *"
+			"0 0 1 * *"
 		]
 	}
 	/**

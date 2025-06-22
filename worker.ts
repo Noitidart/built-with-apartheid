@@ -16,7 +16,8 @@ const CRON_ROUTES: Record<TCronExpression, TCronRoute | TCronRoute[]> = {
   // 6 hours. The endpoints are hit in parallel.
   // '0 */6 * * *': ['/api/v1/stats/generate', '/api/v1/cleanup'],
 
-  '*/10 * * * *': '/api/v1/watchers/email'
+  // Every 1st day of the month at 00:00 UTC
+  '0 0 1 * *': '/api/v1/watchers/remind'
 };
 
 export default {
