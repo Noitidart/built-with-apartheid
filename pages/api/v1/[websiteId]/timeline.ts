@@ -143,6 +143,10 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
           websiteId,
           type: {
             notIn: ['WATCHED', 'UNWATCHED']
+          },
+          // Filter out interactions from banned users
+          user: {
+            isBanned: false
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -185,11 +189,12 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
       prisma.$queryRaw<Array<{ userId: string; user_number: number }>>`
       WITH first_user_interactions AS (
         SELECT 
-          "userId",
-          MIN("createdAt") as first_interaction_at
-        FROM "Interaction"
-        WHERE "websiteId" = ${websiteId} AND "userId" IS NOT NULL
-        GROUP BY "userId"
+          i."userId",
+          MIN(i."createdAt") as first_interaction_at
+        FROM "Interaction" i
+        INNER JOIN "User" u ON i."userId" = u.id
+        WHERE i."websiteId" = ${websiteId} AND i."userId" IS NOT NULL AND u."isBanned" = false
+        GROUP BY i."userId"
       )
       SELECT 
         "userId",
@@ -201,32 +206,35 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
       // Get scan numbers
       prisma.$queryRaw<Array<{ id: number; scan_number: number }>>`
       SELECT 
-        id,
+        i.id,
         -- Cast to int because ROW_NUMBER() returns bigint which becomes JS BigInt
-        ROW_NUMBER() OVER (ORDER BY "createdAt")::int as scan_number
-      FROM "Interaction"
-      WHERE "websiteId" = ${websiteId} AND type = 'SCAN'
-      ORDER BY "createdAt"
+        ROW_NUMBER() OVER (ORDER BY i."createdAt")::int as scan_number
+      FROM "Interaction" i
+      LEFT JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'SCAN' AND (u."isBanned" = false OR u."isBanned" IS NULL)
+      ORDER BY i."createdAt"
     `,
 
       // Get post numbers
       prisma.$queryRaw<Array<{ id: number; post_number: number }>>`
       SELECT 
-        id,
+        i.id,
         -- Cast to int because ROW_NUMBER() returns bigint which becomes JS BigInt
-        ROW_NUMBER() OVER (ORDER BY "createdAt")::int as post_number
-      FROM "Interaction"
-      WHERE "websiteId" = ${websiteId} AND type = 'POST'
-      ORDER BY "createdAt"
+        ROW_NUMBER() OVER (ORDER BY i."createdAt")::int as post_number
+      FROM "Interaction" i
+      INNER JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'POST' AND u."isBanned" = false
+      ORDER BY i."createdAt"
     `,
 
       // Get total posters count
       prisma.$queryRaw<Array<{ count: number }>>`
       SELECT 
         -- Cast to int because COUNT() returns bigint which becomes JS BigInt
-        COUNT(DISTINCT "userId")::int as count
-      FROM "Interaction"
-      WHERE "websiteId" = ${websiteId} AND type = 'POST' AND "userId" IS NOT NULL
+        COUNT(DISTINCT i."userId")::int as count
+      FROM "Interaction" i
+      INNER JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'POST' AND i."userId" IS NOT NULL AND u."isBanned" = false
     `.then((result) => result[0]?.count || 0)
     ]);
 

@@ -80,6 +80,8 @@ function buildEngagementQuery(
         MAX(p."createdAt") as last_post_at
       FROM "Website" w
       LEFT JOIN "Post" p ON w.id = p."websiteId" 
+      LEFT JOIN "User" u ON p."userId" = u.id
+      WHERE (p.id IS NULL OR u."isBanned" = false)
         ${sinceCondition}
       GROUP BY w.id
     )

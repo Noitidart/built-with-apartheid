@@ -103,7 +103,8 @@ async function getRecentActivityHandler(
         some: {
           createdAt: { gte: sevenDaysAgo }
         }
-      }
+      },
+      isBanned: false
     },
     select: {
       posts: {
@@ -141,7 +142,10 @@ async function getRecentActivityHandler(
     where: {
       posts: {
         some: {
-          createdAt: { gte: sevenDaysAgo }
+          createdAt: { gte: sevenDaysAgo },
+          user: {
+            isBanned: false
+          }
         }
       }
     },
@@ -154,7 +158,10 @@ async function getRecentActivityHandler(
           userId: true
         },
         where: {
-          createdAt: { gte: sevenDaysAgo }
+          createdAt: { gte: sevenDaysAgo },
+          user: {
+            isBanned: false
+          }
         },
         orderBy: {
           createdAt: 'desc'
