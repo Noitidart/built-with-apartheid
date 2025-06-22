@@ -18,7 +18,7 @@ export type TButtonProps = {
   loading?: boolean;
 
   /** (default: "blue") */
-  color?: 'blue';
+  color?: 'blue' | 'black';
 
   /** (default: "lg") */
   size?: 'sm' | 'md' | 'lg';
@@ -59,6 +59,18 @@ const Button = memo(function Button(initialProps: TButtonProps) {
         hover: 'hover:bg-blue-50 disabled:hover:bg-transparent',
         dark: 'dark:text-blue-400 dark:border-blue-400 dark:hover:bg-blue-950 dark:disabled:hover:bg-transparent'
       }
+    },
+    black: {
+      filled: {
+        base: 'bg-gray-700 text-white',
+        hover: 'hover:bg-gray-600 disabled:hover:bg-gray-700',
+        dark: 'dark:bg-gray-700 dark:hover:bg-gray-600 dark:disabled:hover:bg-gray-700'
+      },
+      outlined: {
+        base: 'bg-transparent text-gray-700 border border-gray-700',
+        hover: 'hover:bg-gray-50 disabled:hover:bg-transparent',
+        dark: 'dark:text-gray-300 dark:border-gray-300 dark:hover:bg-gray-800 dark:disabled:hover:bg-transparent'
+      }
     }
   };
 
@@ -92,7 +104,7 @@ const Button = memo(function Button(initialProps: TButtonProps) {
     >
       {props.loading && (
         <Spinner
-          color={props.outlined ? 'blue' : 'white'}
+          color={props.outlined ? props.color : 'white'}
           size="sm"
           className="mr-2"
         />
