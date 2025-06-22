@@ -384,8 +384,8 @@ function PostForm({
                   isSubmitting
                     ? 'Posting...'
                     : countdown > 0
-                    ? `Wait ${countdown}s`
-                    : 'Post Anonymously'
+                      ? `Wait ${countdown}s`
+                      : 'Post Anonymously'
                 }
                 className=""
               />
@@ -466,7 +466,7 @@ function InteractionLayout({
   const containerClasses = classnames(baseClasses, currentTint.container);
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} id={interaction.id.toString()}>
       {/* Mobile: Vertical stack, Desktop: Horizontal layout */}
       <div className="flex flex-col sm:flex-row sm:gap-4">
         {/* First row on mobile: Avatar and date */}
