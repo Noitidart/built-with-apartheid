@@ -61,7 +61,13 @@ const loginHandler = withPrisma(async function loginHandler(
       id: true,
       email: true,
       password: true,
-      isMod: true
+      isMod: true,
+      watchedWebsites: {
+        select: {
+          id: true,
+          hostname: true
+        }
+      }
     }
   });
 
@@ -105,28 +111,47 @@ const loginHandler = withPrisma(async function loginHandler(
     }
   }
 
-  // Check for anonymous user
-  const currentMe = await getMeFromRefreshedToken({
+  // Check if the pre-login user is anonymous
+  const preLoginMe = await getMeFromRefreshedToken({
     prisma,
     request: req,
     response: res
   });
 
-  // If there's a current anonymous user and the logging in user is different, merge them
-  if (currentMe.id !== user.id && !currentMe.email) {
-    await mergeAnonymousUserToAuthenticatedUser({
-      prisma,
-      anonymousUserId: currentMe.id,
-      authenticatedUserId: user.id
-    });
-  }
-
   const me: TMe = {
     id: user.id,
     email: user.email,
     isMod: user.isMod,
-    isAuthenticated: true
+    isAuthenticated: true,
+    watchedWebsites: user.watchedWebsites
   };
+
+  // If there's a current anonymous user and the logging in user is different, merge them
+  const isPreLoginAnonymous = !preLoginMe.email;
+  const isPreLoginSameUser = preLoginMe.id === user.id;
+  if (!isPreLoginSameUser && isPreLoginAnonymous) {
+    await mergeAnonymousUserToAuthenticatedUser({
+      prisma,
+      anonymousUserId: preLoginMe.id,
+      authenticatedUserId: user.id
+    });
+
+    // Find the new watched websites after merge
+    const userWithMergedWatchedWebsites = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: {
+        watchedWebsites: {
+          select: { id: true, hostname: true }
+        }
+      }
+    });
+
+    if (!userWithMergedWatchedWebsites) {
+      throw new Error('User with merged watched websites not found');
+    }
+
+    me.watchedWebsites = userWithMergedWatchedWebsites.watchedWebsites;
+  }
 
   // Set authentication cookie
   await setTokenCookie(res, {
@@ -148,7 +173,13 @@ async function mergeAnonymousUserToAuthenticatedUser(inputs: {
   const { prisma, anonymousUserId, authenticatedUserId } = inputs;
 
   const anonymousUser = await prisma.user.findUnique({
-    where: { id: anonymousUserId }
+    where: { id: anonymousUserId },
+    select: {
+      id: true,
+      watchedWebsites: {
+        select: { id: true }
+      }
+    }
   });
   if (!anonymousUser) {
     // Exit as the anonymous user doesn't exist in the database, it's just a
@@ -173,6 +204,20 @@ async function mergeAnonymousUserToAuthenticatedUser(inputs: {
     where: { userId: anonymousUserId },
     data: { userId: authenticatedUserId }
   });
+
+  // Transfer watched websites from anonymous user to authenticated user
+  if (anonymousUser.watchedWebsites.length > 0) {
+    await prisma.user.update({
+      where: { id: authenticatedUserId },
+      data: {
+        watchedWebsites: {
+          connect: anonymousUser.watchedWebsites.map((website) => ({
+            id: website.id
+          }))
+        }
+      }
+    });
+  }
 
   // Delete the anonymous user
   await prisma.user.delete({

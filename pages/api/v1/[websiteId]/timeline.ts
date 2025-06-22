@@ -136,7 +136,12 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
     await Promise.all([
       // Main interactions query with all needed fields
       prisma.interaction.findMany({
-        where: { websiteId },
+        where: { 
+          websiteId,
+          type: {
+            notIn: ['WATCHED', 'UNWATCHED']
+          }
+        },
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -389,7 +394,9 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
         case 'BANNED_USER':
         case 'UNBANNED_USER':
         case 'BANNED_IPS':
-        case 'UNBANNED_IPS': {
+        case 'UNBANNED_IPS':
+        case 'WATCHED':
+        case 'UNWATCHED': {
           throw new Error(
             `Interaction type ${interaction.type} is not supported`
           );

@@ -69,7 +69,9 @@ export type TScanResponseData =
       _errors?: TResponseDataWithErrors['_errors'];
       isCached?: boolean;
       scanInteraction: TScanInteraction;
-      website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
+      website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'> & {
+        _count: { watchers: number };
+      };
       me: TMe;
     };
 
@@ -134,7 +136,10 @@ const newScanHandler = withPrisma(async function newScanHandler(
     select: {
       id: true,
       hostname: true,
-      isMasjid: true
+      isMasjid: true,
+      _count: {
+        select: { watchers: true }
+      }
     }
   });
 
