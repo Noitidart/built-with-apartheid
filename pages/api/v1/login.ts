@@ -62,6 +62,7 @@ const loginHandler = withPrisma(async function loginHandler(
       email: true,
       password: true,
       isMod: true,
+      isBanned: true,
       watchedWebsites: {
         select: {
           id: true,
@@ -122,6 +123,7 @@ const loginHandler = withPrisma(async function loginHandler(
     id: user.id,
     email: user.email,
     isMod: user.isMod,
+    isBanned: user.isBanned,
     isAuthenticated: true,
     watchedWebsites: user.watchedWebsites
   };

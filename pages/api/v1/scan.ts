@@ -118,6 +118,16 @@ const newScanHandler = withPrisma(async function newScanHandler(
   });
   const userId = me.id;
 
+  // Check if user is banned
+  if (me.isBanned) {
+    return res.status(403).json({
+      _errors: {
+        formErrors: ['requestErrors.forbidden'],
+        fieldErrors: {}
+      }
+    });
+  }
+
   // Get or create IP for the user
   const userIp = await getOrCreateIp(prisma, req, userId);
 

@@ -69,6 +69,16 @@ const newPostHandler = withPrisma(async function newPostHandler(
   });
   const userId = me.id;
 
+  // Check if user is banned
+  if (me.isBanned) {
+    return res.status(403).json({
+      _errors: {
+        formErrors: ['requestErrors.forbidden'],
+        fieldErrors: {}
+      }
+    });
+  }
+
   const rateLimitKey = `retry-post-after:${userId}`;
   // Check rate limit
   {

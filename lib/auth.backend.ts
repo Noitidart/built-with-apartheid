@@ -300,6 +300,7 @@ export async function getMeFromRefreshedToken(inputs: {
 
   const DEFAULT_EMAIL = null;
   const DEFAULT_IS_MOD = false;
+  const DEFAULT_IS_BANNED = false;
   const DEFAULT_WATCHED_WEBSITES: TMe['watchedWebsites'] = [];
   // Smart database operation: create new user or fetch existing
   let user;
@@ -309,6 +310,7 @@ export async function getMeFromRefreshedToken(inputs: {
       id: userId,
       email: DEFAULT_EMAIL,
       isMod: DEFAULT_IS_MOD,
+      isBanned: DEFAULT_IS_BANNED,
       watchedWebsites: DEFAULT_WATCHED_WEBSITES,
       isAuthenticated
     };
@@ -325,6 +327,7 @@ export async function getMeFromRefreshedToken(inputs: {
         id: true,
         email: true,
         isMod: true,
+        isBanned: true,
         watchedWebsites: {
           select: {
             id: true,
@@ -341,6 +344,7 @@ export async function getMeFromRefreshedToken(inputs: {
           id: userId,
           email: DEFAULT_EMAIL,
           isMod: DEFAULT_IS_MOD,
+          isBanned: DEFAULT_IS_BANNED,
           watchedWebsites: DEFAULT_WATCHED_WEBSITES,
           isAuthenticated
         };
@@ -354,6 +358,7 @@ export async function getMeFromRefreshedToken(inputs: {
           id: userId,
           email: DEFAULT_EMAIL,
           isMod: DEFAULT_IS_MOD,
+          isBanned: DEFAULT_IS_BANNED,
           watchedWebsites: DEFAULT_WATCHED_WEBSITES,
           isAuthenticated
         };
@@ -370,6 +375,7 @@ export async function getMeFromRefreshedToken(inputs: {
     id: userId,
     email: user.email,
     isMod: user.isMod,
+    isBanned: user.isBanned,
     isAuthenticated,
     watchedWebsites: user.watchedWebsites
   };
