@@ -1,26 +1,69 @@
+import Button from '@/components/Button';
 import { COMPANIES } from '@/constants/companies';
+import { useTimelineQuery } from '@/hooks/useTimelineQuery';
 import { assertNever } from '@/lib/typescript';
 import type {
   TPostRequestBody,
   TPostResponseData
 } from '@/pages/api/v1/[websiteId]/post';
-import type { TTimelineResponseData } from '@/pages/api/v1/[websiteId]/timeline';
+import type {
+  TTimelineCompany,
+  TTimelinePostInteractionWithNumber,
+  TTimelineResponseData,
+  TTimelineScanInteractionWithNumber
+} from '@/pages/api/v1/[websiteId]/timeline';
 import {
   assertIsMilestoneInteraction,
-  assertIsPostInteraction,
   assertIsScanInteraction
 } from '@/types/interaction';
 import type { TWebsite } from '@/types/website';
-import { getCurrentUserId } from '@/utils/user-utils';
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import axios from 'axios';
 import classnames from 'classnames';
 import { AnimatePresence, motion } from 'motion/react';
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 type TimelineProps = {
   website: Pick<TWebsite, 'id'>;
 };
+
+function useRateLimitCountdown() {
+  const [rateLimitError, setRateLimitError] = useState<
+    [string, { retryAfter: string }] | null
+  >(null);
+  const [countdown, setCountdown] = useState<number>(0);
+
+  useEffect(
+    function updateCountdownOnRateLimitChange() {
+      if (!rateLimitError) {
+        setCountdown(0);
+        return;
+      }
+
+      const retryAfterDate = new Date(rateLimitError[1].retryAfter);
+
+      function updateCountdown() {
+        const now = Date.now();
+        const remaining = Math.max(
+          0,
+          Math.ceil((retryAfterDate.getTime() - now) / 1000)
+        );
+        setCountdown(remaining);
+
+        if (remaining === 0) {
+          setRateLimitError(null);
+        }
+      }
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+
+      return () => clearInterval(interval);
+    },
+    [rateLimitError]
+  );
+
+  return { countdown, rateLimitError, setRateLimitError };
+}
 
 function Timeline({ website }: TimelineProps) {
   const timelineQuery = useTimelineQuery(website.id);
@@ -46,7 +89,7 @@ function Timeline({ website }: TimelineProps) {
           Error Loading Timeline
         </h3>
         <p className="text-red-700 dark:text-red-300">
-          Failed to load community timeline. Please try again later.
+          Failed to load activity. Please try again later.
         </p>
       </div>
     );
@@ -58,17 +101,15 @@ function Timeline({ website }: TimelineProps) {
   }
 
   // Calculate community stats
-  const totalScans = Object.keys(data.scans).length;
-  const totalConcernedUsers = Object.values(data.users).filter(
-    (user) => user.type === 'concerned'
-  ).length;
+  const totalScans = data.interactions.filter((i) => i.type === 'SCAN').length;
+  const totalPosters = data.totalPosters;
 
   return (
     <div className="w-full space-y-6">
       <ActiveCompanyList
         companies={data.companies}
         totalScans={totalScans}
-        totalConcernedUsers={totalConcernedUsers}
+        totalPosters={totalPosters}
       />
 
       {/* Community Timeline Section */}
@@ -86,7 +127,7 @@ function Timeline({ website }: TimelineProps) {
         <div className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
           <PostForm
             websiteId={website.id}
-            users={data.users}
+            meUserNumber={data.meUserNumber}
             refetchTimelineQuery={timelineQuery.refetch}
           />
         </div>
@@ -130,25 +171,6 @@ function getDetectedCompanies(companyStatusChanges: unknown): string[] {
     .map(([companyId]) => companyId);
 }
 
-function useTimelineQuery(websiteId: number) {
-  return useQuery({
-    queryKey: ['timeline', websiteId],
-    queryFn: async function fetchTimeline() {
-      const response = await axios.get<TTimelineResponseData>(
-        `/api/v1/${websiteId}/timeline`
-      );
-      return response.data;
-    },
-    enabled: !!websiteId,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 30_000,
-    notifyOnChangeProps: ['data', 'status', 'error', 'isFetching']
-  });
-}
-
-type TTimelineCompany = TTimelineResponseData['companies'][number];
-
 // Utility functions for company status
 function isActive(company: TTimelineCompany): boolean {
   // A company is active if it has at least one infection with end: null
@@ -165,13 +187,13 @@ function getFirstDetectedAt(company: TTimelineCompany): Date | null {
 type ActiveCompanyListProps = {
   companies: TTimelineCompany[];
   totalScans: number;
-  totalConcernedUsers: number;
+  totalPosters: number;
 };
 
 const ActiveCompanyList = memo(function ActiveCompanyList({
   companies,
   totalScans,
-  totalConcernedUsers
+  totalPosters
 }: ActiveCompanyListProps) {
   const activeCompanies = companies.filter(isActive);
 
@@ -222,7 +244,7 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
                       {totalScans} community scans
                     </span>
                     <span className="sm:before:content-['•'] sm:before:mx-2">
-                      {totalConcernedUsers} people taking action
+                      {totalPosters} people taking action
                     </span>
                   </div>
                 </div>
@@ -246,14 +268,20 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
 
 type PostFormProps = {
   websiteId: number;
-  users: TTimelineResponseData['users'];
+  meUserNumber: number;
   /** Should be awaitable to know when the refetch finishes */
-  refetchTimelineQuery: UseQueryResult<TTimelineResponseData, Error>['refetch'];
+  refetchTimelineQuery: () => Promise<unknown>;
 };
 
-function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
+function PostForm({
+  websiteId,
+  meUserNumber,
+  refetchTimelineQuery
+}: PostFormProps) {
   const [postContent, setPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { countdown, rateLimitError, setRateLimitError } =
+    useRateLimitCountdown();
 
   const submitPost = async function submitPost(e: React.FormEvent) {
     e.preventDefault();
@@ -263,22 +291,51 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
 
     try {
       await axios.post<TPostResponseData>(`/api/v1/${websiteId}/post`, {
-        body: postContent,
-        userId: getCurrentUserId()
+        body: postContent
       } satisfies TPostRequestBody);
 
       await refetchTimelineQuery();
 
       setPostContent('');
+      setRateLimitError(null);
     } catch (error) {
       console.error('Failed to submit post:', error);
-      alert('Failed to submit post. Please try again later.');
+
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        const errorData = error.response.data;
+        const formErrors = errorData?._errors?.formErrors;
+        if (formErrors?.length > 0) {
+          const formError = formErrors[0];
+          if (
+            Array.isArray(formError) &&
+            formError[0] === 'requestErrors.rateLimitExceeded'
+          ) {
+            setRateLimitError(formError as [string, { retryAfter: string }]);
+          }
+        }
+      } else {
+        alert('Failed to submit post. Please try again later.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const userInfo = getCurrentUserAvatarInfo(users);
+  const userColor = getUserColor(meUserNumber);
+  const userInfo = {
+    displayName: `Concerned User #${meUserNumber}`,
+    className: `${userColor} text-white`,
+    content: (
+      <>
+        <span className="text-[8px] font-semibold align-bottom -translate-x-px translate-y-0.5">
+          #
+        </span>
+        <span className="text-xs font-bold align-middle -translate-x-px">
+          {meUserNumber}
+        </span>
+      </>
+    )
+  };
 
   return (
     <>
@@ -290,7 +347,7 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
             userInfo.className
           )}
         >
-          <div className="scale-75">{userInfo.content}</div>
+          {userInfo.content}
         </div>
         <span className="font-semibold text-gray-900 dark:text-gray-100">
           {userInfo.displayName}
@@ -301,6 +358,14 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
       <div className="px-4 sm:px-6 pb-4">
         <form onSubmit={submitPost}>
           <div className="flex flex-col gap-3">
+            {rateLimitError && countdown > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  Please wait {countdown} second{countdown !== 1 ? 's' : ''}{' '}
+                  before posting again
+                </p>
+              </div>
+            )}
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
@@ -311,13 +376,19 @@ function PostForm({ websiteId, users, refetchTimelineQuery }: PostFormProps) {
               disabled={isSubmitting}
             />
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
-                disabled={!postContent.trim() || isSubmitting}
-                className="text-sm sm:text-base px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-              >
-                {isSubmitting ? 'Posting...' : 'Post Anonymously'}
-              </button>
+                disabled={!postContent.trim() || countdown > 0}
+                loading={isSubmitting}
+                label={
+                  isSubmitting
+                    ? 'Posting...'
+                    : countdown > 0
+                      ? `Wait ${countdown}s`
+                      : 'Post Anonymously'
+                }
+                className=""
+              />
             </div>
           </div>
         </form>
@@ -395,7 +466,7 @@ function InteractionLayout({
   const containerClasses = classnames(baseClasses, currentTint.container);
 
   return (
-    <div className={containerClasses}>
+    <div className={containerClasses} id={interaction.id.toString()}>
       {/* Mobile: Vertical stack, Desktop: Horizontal layout */}
       <div className="flex flex-col sm:flex-row sm:gap-4">
         {/* First row on mobile: Avatar and date */}
@@ -470,19 +541,29 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
     case 'SCAN': {
       assertIsScanInteraction(interaction);
 
-      const detectedCompanies = getDetectedCompanies(interaction.scan?.changes);
-      const scanData = timelineData?.scans[interaction.id];
-      const title = `Scan #${scanData?.number}`;
-      const subtitle = interaction.userId
-        ? `by ${getUserDisplayName(interaction.userId, timelineData.users)}`
-        : '';
+      const scanInteraction = interaction as TTimelineScanInteractionWithNumber;
+      const detectedCompanies = getDetectedCompanies(
+        scanInteraction.scan.changes
+      );
+      const hasUserNumberPosted = timelineData.interactions.some(
+        function isPostByUserNumber(interaction) {
+          return (
+            interaction.type === 'POST' &&
+            interaction.post.userNumber === scanInteraction.scan.userNumber
+          );
+        }
+      );
+      const title = `Scan #${scanInteraction.scan.number}`;
+      const subtitle = `${
+        hasUserNumberPosted ? 'Concerned' : 'Curious'
+      } User #${scanInteraction.scan.userNumber}`;
 
       let body: React.ReactNode;
       let avatar: { className: string; content: React.ReactNode };
 
       if (detectedCompanies.length === 0) {
         // Clean scan logic
-        const isFirstScan = scanData?.number === 1;
+        const isFirstScan = scanInteraction.scan.number === 1;
 
         if (isFirstScan) {
           body = '✅ Clean! No Israeli technologies detected';
@@ -629,19 +710,25 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
     }
 
     case 'POST': {
-      assertIsPostInteraction(interaction);
-      const userInfo = getUserAvatarInfo(
-        interaction.userId,
-        timelineData.users
-      );
+      const postInteraction = interaction as TTimelinePostInteractionWithNumber;
+      const userColor = getUserColor(postInteraction.post.userNumber);
 
       return (
         <InteractionLayout
-          title={userInfo.displayName}
+          title={`Concerned User #${postInteraction.post.userNumber}`}
           body={interaction.post?.body || 'No content'}
           avatar={{
-            className: userInfo.className,
-            content: userInfo.content
+            className: `${userColor} text-white`,
+            content: (
+              <>
+                <span className="text-xs font-semibold align-bottom -translate-x-0.5 translate-y-px">
+                  #
+                </span>
+                <span className="text-lg font-bold align-middle -translate-x-0.5">
+                  {postInteraction.post.userNumber}
+                </span>
+              </>
+            )
           }}
           interaction={interaction}
         />
@@ -757,114 +844,25 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
     }
 
     default:
-      assertNever(interaction.type);
+      assertNever(interaction);
   }
 }
 
-function getUserDisplayName(
-  userId: string,
-  users: TTimelineResponseData['users']
-): string {
-  const user = users[userId];
-  if (!user) return 'System';
-
-  const userType = user.type === 'curious' ? 'Curious' : 'Concerned';
-  return `${userType} User #${user.number}`;
-}
-
-/**
- * Gets consistent avatar information for a user across the application
- */
-export function getUserAvatarInfo(
-  userId: string,
-  users: TTimelineResponseData['users']
-): {
-  displayName: string;
-  className: string;
-  content: React.ReactNode;
-} {
-  const user = users[userId];
-
-  if (user) {
-    const userType = user.type === 'curious' ? 'Curious' : 'Concerned';
-    const displayName = `${userType} User #${user.number}`;
-
-    // Generate consistent colors based on user number and type
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500',
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-teal-500'
-    ];
-
-    const baseIndex = (user.number - 1) % colors.length;
-    const className = colors[baseIndex];
-
-    return {
-      displayName,
-      className,
-      content: (
-        <div
-          // * "-translate-x-0.5" - to adjust for width of small hashtag to make number look centered.
-          className="-translate-x-0.5"
-        >
-          <span className="!text-xs !font-medium">#</span>
-          <span className="!text-xl">{user.number}</span>
-        </div>
-      )
-    };
-  }
-
-  // If user doesn't exist in users data, return default
-  return {
-    displayName: 'System',
-    className: 'bg-gray-500',
-    content: 'S'
-  };
-}
-
-/**
- * Gets avatar info for the current user, calculating their next number if they haven't interacted yet
- */
-export function getCurrentUserAvatarInfo(
-  users: TTimelineResponseData['users']
-): {
-  userId: string;
-  displayName: string;
-  className: string;
-  content: React.ReactNode;
-} {
-  const currentUserId = getCurrentUserId();
-  const currentUser = users[currentUserId];
-
-  if (currentUser) {
-    const avatarInfo = getUserAvatarInfo(currentUserId, users);
-    return {
-      userId: currentUserId,
-      ...avatarInfo
-    };
-  }
-
-  // If user hasn't interacted yet, they would be the next curious user
-  const curiousUserCount = Object.values(users).filter(
-    (user) => user.type === 'curious'
-  ).length;
-
-  return {
-    userId: currentUserId,
-    displayName: `Curious User #${curiousUserCount + 1}`,
-    className: 'bg-blue-500',
-    content: (
-      <div className="-translate-x-0.5">
-        <span className="!text-xs !font-medium">#</span>
-        <span className="!text-xl">{curiousUserCount + 1}</span>
-      </div>
-    )
-  };
+// Generate a consistent color for a user based on their number
+function getUserColor(userNumber: number): string {
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-teal-500',
+    'bg-orange-500',
+    'bg-cyan-500'
+  ];
+  return colors[(userNumber - 1) % colors.length];
 }
 
 export default Timeline;

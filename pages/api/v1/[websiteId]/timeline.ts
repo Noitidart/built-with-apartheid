@@ -1,187 +1,439 @@
 import { COMPANIES, type CompanyId } from '@/constants/companies';
-import {
-  isHumanInteraction,
-  TIMELINE_INTERACTION_SELECT,
-  type TTimelineInteraction
-} from '@/constants/timeline';
+import { getMeFromRefreshedToken } from '@/lib/auth.backend';
 import { withPrisma } from '@/lib/prisma';
-import { isScanInteraction, type TInteraction } from '@/types/interaction';
-import type { TUser } from '@/types/user';
+import { assertNever } from '@/lib/typescript';
+import type { TInteraction } from '@/types/interaction';
+import type { TMilestone } from '@/types/milestone';
+import type { TScan } from '@/types/scan';
+import type { TMe } from '@/types/user';
+import type { TWebsite } from '@/types/website';
 import type { PrismaClient } from '@prisma/client';
-import type { NextRequest } from 'next/server';
+import delay from 'delay';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
-export const config = {
-  runtime: 'edge'
+const querySchema = z.object({
+  websiteId: z.string().transform(Number)
+}) satisfies z.ZodType<
+  TTimelineRequestQuery,
+  z.ZodTypeDef,
+  { websiteId: string }
+>;
+
+type TTimelineRequestQuery = {
+  websiteId: TWebsite['id'];
 };
 
-const TimelineRequestQuerySchema = z.object({
-  websiteId: z.string().transform((val) => parseInt(val, 10))
-});
-
-export type TTimelineResponseData = {
-  /** "Timeline Users" - A map of user metadata for the given timeline. */
-  users: Record<TUser['id'], { number: number; type: 'curious' | 'concerned' }>;
-
-  /** "Timeline Scans" - A map of scan interaction id to the scan metadata for the given timeline. */
-  scans: Record<
-    TTimelineInteraction['id'],
-    {
-      number: number;
-    }
-  >;
-
-  /** "Timeline Interactions" - A timeline is defined as a list of interaction for a given website. This currently holds all the interactions, there is no pagination. */
-  interactions: TTimelineInteraction[];
-
-  /** "Timeline Companies" - A list of history of this website with all companies we scan for. */
-  companies: Array<TTimelineCompany>;
-};
-
-async function getTimelineHandler(prisma: PrismaClient, req: NextRequest) {
-  if (req.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405
-    });
-  }
-
-  const query = Object.fromEntries(req.nextUrl.searchParams);
-  const result = TimelineRequestQuerySchema.safeParse(query);
-  if (!result.success) {
-    return new Response(
-      JSON.stringify({
-        error: 'Invalid website ID',
-        details: result.error.format()
-      }),
-      { status: 400 }
-    );
-  }
-  const { websiteId } = result.data;
-
-  const timelineInteractions = await prisma.interaction.findMany({
-    where: {
-      websiteId
-    },
-    orderBy: {
-      createdAt: 'desc'
-    },
-    select: TIMELINE_INTERACTION_SELECT
-  });
-
-  const timelineInteractionsByNewestFirst = timelineInteractions;
-  const timelineInteractionsByOldestFirst = timelineInteractionsByNewestFirst
-    .slice()
-    .reverse();
-
-  return new Response(
-    JSON.stringify({
-      users: buildTimelineUsers({
-        timelineInteractionsByOldestFirst
-      }),
-      scans: buildTimelineScans({
-        timelineInteractionsByOldestFirst
-      }),
-      interactions: timelineInteractions,
-      companies: buildTimelineCompanies({
-        timelineInteractionsByOldestFirst
-      })
-    } satisfies TTimelineResponseData),
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    }
-  );
-}
-
-function buildTimelineUsers(inputs: {
-  timelineInteractionsByOldestFirst: TTimelineInteraction[];
-}): TTimelineResponseData['users'] {
-  const curiousUsers = new Set<TUser['id']>();
-  const concernedUsers = new Set<TUser['id']>();
-
-  for (const interaction of inputs.timelineInteractionsByOldestFirst) {
-    if (!isHumanInteraction(interaction)) {
-      continue;
-    }
-
-    if (interaction.type === 'POST') {
-      curiousUsers.delete(interaction.userId);
-      // Set maintains insertion order so adding it again will not change the
-      // order when we turn it into an array.
-      concernedUsers.add(interaction.userId);
-    } else if (interaction.type === 'SCAN') {
-      if (concernedUsers.has(interaction.userId)) {
-        // User is already concerned meaning he has posted, so he's not just
-        // curious he is concerned.
-        continue;
-      }
-
-      curiousUsers.add(interaction.userId);
-    }
-  }
-
-  const timelineUsers: TTimelineResponseData['users'] = {};
-
-  Array.from(curiousUsers).forEach(function addCuriousUserToMap(userId, index) {
-    timelineUsers[userId] = {
-      type: 'curious',
-      number: index + 1
-    };
-  });
-
-  Array.from(concernedUsers).forEach(function addConcernedUserToMap(
-    userId,
-    index
-  ) {
-    timelineUsers[userId] = {
-      type: 'concerned',
-      number: index + 1
-    };
-  });
-
-  return timelineUsers;
-}
-
-function buildTimelineScans(inputs: {
-  timelineInteractionsByOldestFirst: TTimelineInteraction[];
-}): TTimelineResponseData['scans'] {
-  const timelineScans: TTimelineResponseData['scans'] = {};
-
-  const scanInteractions =
-    inputs.timelineInteractionsByOldestFirst.filter(isScanInteraction);
-
-  scanInteractions.forEach(function addScanToMap(interaction, index) {
-    timelineScans[interaction.id] = {
-      number: index + 1
-    };
-  });
-
-  return timelineScans;
-}
-
-type TActiveInfection = {
+export type TActiveInfection = {
   start: TInteraction['createdAt'];
   end: null;
 };
 
-type TResolvedInfection = {
+export type TResolvedInfection = {
   start: TInteraction['createdAt'];
   end: TInteraction['createdAt'];
 };
 
 // This should be `[] | [...TResolvedInfection[], TActiveInfection] | TResolvedInfection[]`
 // but I'm not sure how to express that in TypeScript.
-type TInfections = Array<TActiveInfection | TResolvedInfection>;
+export type TInfections = Array<TActiveInfection | TResolvedInfection>;
 
-type TTimelineCompany = {
+export type TTimelineCompany = {
   id: CompanyId;
   infections: TInfections;
 };
 
+// Base type for common fields
+type TTimelineInteractionBase = {
+  id: number;
+  createdAt: Date;
+  websiteId: number;
+};
+
+// Discriminated union types for timeline interactions
+export type TTimelineScanInteractionWithNumber = TTimelineInteractionBase & {
+  type: 'SCAN';
+  scan: {
+    changes: TScan['changes'];
+    number: number;
+    userNumber: number;
+  };
+};
+
+export type TTimelinePostInteractionWithNumber = TTimelineInteractionBase & {
+  type: 'POST';
+  post: {
+    body: string;
+    number: number;
+    userNumber: number;
+  };
+};
+
+export type TTimelineMilestoneInteraction = TTimelineInteractionBase & {
+  type: 'MILESTONE';
+  milestone: {
+    id: number;
+    data: TMilestone['data'];
+    dataInteraction?: {
+      id: number;
+      type: string;
+      createdAt: Date;
+      userNumber: number; // Always non-null as milestones are triggered by human actions
+    };
+  };
+};
+
+export type TTimelineInteractionWithNumbers =
+  | TTimelineScanInteractionWithNumber
+  | TTimelinePostInteractionWithNumber
+  | TTimelineMilestoneInteraction;
+
+export type TTimelineResponseData = {
+  /** "Timeline Interactions" - A timeline is defined as a list of interaction for a given website. This currently holds all the interactions, there is no pagination. */
+  interactions: TTimelineInteractionWithNumbers[];
+
+  /** "Timeline Companies" - A list of history of this website with all companies we scan for. */
+  companies: TTimelineCompany[];
+
+  /** "Me" - The current user's information */
+  me: TMe;
+
+  /** "Me User Number" - The current user's number for this timeline */
+  meUserNumber: number;
+
+  /** "Total Posters" - The total number of unique users who have posted */
+  totalPosters: number;
+};
+
+const getTimelineHandler = withPrisma(async function getTimelineHandler(
+  prisma: PrismaClient,
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  await delay(2_000);
+
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const result = querySchema.safeParse(req.query);
+  if (!result.success) {
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: result.error.flatten().fieldErrors
+      }
+    });
+  }
+  const { websiteId } = result.data;
+
+  const me = await getMeFromRefreshedToken({
+    prisma,
+    request: req,
+    response: res
+  });
+  const userId = me.id;
+
+  // Run all queries in parallel using Promise.all
+  const [interactions, userNumbers, scanNumbers, postNumbers, totalPosters] =
+    await Promise.all([
+      // Main interactions query with all needed fields
+      prisma.interaction.findMany({
+        where: {
+          websiteId,
+          type: {
+            notIn: ['WATCHED', 'UNWATCHED']
+          },
+          // Filter out interactions from banned users
+          user: {
+            isBanned: false
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          type: true,
+          websiteId: true,
+          userId: true, // Need this to look up user numbers
+          scan: {
+            select: {
+              id: true,
+              changes: true
+            }
+          },
+          post: {
+            select: {
+              id: true,
+              body: true
+            }
+          },
+          milestone: {
+            select: {
+              id: true,
+              data: true,
+              dataInteraction: {
+                select: {
+                  id: true,
+                  type: true,
+                  createdAt: true,
+                  userId: true // To show user number in milestones
+                }
+              }
+            }
+          }
+        }
+      }),
+
+      // Get user numbers based on first interaction time
+      prisma.$queryRaw<Array<{ userId: string; user_number: number }>>`
+      WITH first_user_interactions AS (
+        SELECT 
+          i."userId",
+          MIN(i."createdAt") as first_interaction_at
+        FROM "Interaction" i
+        INNER JOIN "User" u ON i."userId" = u.id
+        WHERE i."websiteId" = ${websiteId} AND i."userId" IS NOT NULL AND u."isBanned" = false
+        GROUP BY i."userId"
+      )
+      SELECT 
+        "userId",
+        -- Cast to int because ROW_NUMBER() returns bigint which becomes JS BigInt
+        ROW_NUMBER() OVER (ORDER BY first_interaction_at)::int as user_number
+      FROM first_user_interactions
+    `,
+
+      // Get scan numbers
+      prisma.$queryRaw<Array<{ id: number; scan_number: number }>>`
+      SELECT 
+        i.id,
+        -- Cast to int because ROW_NUMBER() returns bigint which becomes JS BigInt
+        ROW_NUMBER() OVER (ORDER BY i."createdAt")::int as scan_number
+      FROM "Interaction" i
+      LEFT JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'SCAN' AND (u."isBanned" = false OR u."isBanned" IS NULL)
+      ORDER BY i."createdAt"
+    `,
+
+      // Get post numbers
+      prisma.$queryRaw<Array<{ id: number; post_number: number }>>`
+      SELECT 
+        i.id,
+        -- Cast to int because ROW_NUMBER() returns bigint which becomes JS BigInt
+        ROW_NUMBER() OVER (ORDER BY i."createdAt")::int as post_number
+      FROM "Interaction" i
+      INNER JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'POST' AND u."isBanned" = false
+      ORDER BY i."createdAt"
+    `,
+
+      // Get total posters count
+      prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT 
+        -- Cast to int because COUNT() returns bigint which becomes JS BigInt
+        COUNT(DISTINCT i."userId")::int as count
+      FROM "Interaction" i
+      INNER JOIN "User" u ON i."userId" = u.id
+      WHERE i."websiteId" = ${websiteId} AND i.type = 'POST' AND i."userId" IS NOT NULL AND u."isBanned" = false
+    `.then((result) => result[0]?.count || 0)
+    ]);
+
+  // Create lookup maps and find max user number
+  const maxUserNumber = Math.max(
+    ...userNumbers.map((timelineUser) => timelineUser.user_number)
+  );
+  const userNumberMap = new Map(
+    userNumbers.map((timelineUser) => [
+      timelineUser.userId,
+      timelineUser.user_number
+    ])
+  );
+  const scanNumberMap = new Map(
+    scanNumbers.map((timelineScan) => [
+      timelineScan.id,
+      timelineScan.scan_number
+    ])
+  );
+  const postNumberMap = new Map(
+    postNumbers.map((timelinePost) => [
+      timelinePost.id,
+      timelinePost.post_number
+    ])
+  );
+
+  // Calculate meUserNumber - use existing number or next available
+  const meUserNumber = userNumberMap.get(userId) ?? maxUserNumber + 1;
+
+  // Transform interactions to include user numbers and create discriminated union
+  const transformedInteractions: TTimelineInteractionWithNumbers[] =
+    interactions.map((interaction) => {
+      switch (interaction.type) {
+        case 'SCAN': {
+          if (!interaction.scan) {
+            throw new Error(
+              `Scan interaction ${interaction.id} missing scan data`
+            );
+          }
+          const scanNumber = scanNumberMap.get(interaction.id);
+          if (!scanNumber) {
+            throw new Error(
+              `Scan number not found for interaction ${interaction.id}`
+            );
+          }
+
+          if (!interaction.userId) {
+            throw new Error(
+              `Scan interaction ${interaction.id} missing userId`
+            );
+          }
+
+          const userNumber = userNumberMap.get(interaction.userId);
+          if (!userNumber) {
+            throw new Error(
+              `User number not found for userId ${interaction.userId}`
+            );
+          }
+
+          if (interaction.websiteId === null) {
+            throw new Error('websiteId is null');
+          }
+
+          return {
+            id: interaction.id,
+            type: interaction.type,
+            createdAt: interaction.createdAt,
+            websiteId: interaction.websiteId,
+            scan: {
+              changes: interaction.scan.changes,
+              number: scanNumber,
+              userNumber
+            }
+          };
+        }
+
+        case 'POST': {
+          if (!interaction.post) {
+            throw new Error(
+              `Post interaction ${interaction.id} missing post data`
+            );
+          }
+
+          if (!interaction.userId) {
+            throw new Error(
+              `Post interaction ${interaction.id} missing userId`
+            );
+          }
+
+          const postNumber = postNumberMap.get(interaction.id);
+          if (!postNumber) {
+            throw new Error(
+              `Post number not found for interaction ${interaction.id}`
+            );
+          }
+          const userNumber = userNumberMap.get(interaction.userId);
+          if (!userNumber) {
+            throw new Error(
+              `User number not found for userId ${interaction.userId}`
+            );
+          }
+
+          if (interaction.websiteId === null) {
+            throw new Error('websiteId is null');
+          }
+
+          return {
+            id: interaction.id,
+            type: interaction.type,
+            createdAt: interaction.createdAt,
+            websiteId: interaction.websiteId,
+            post: {
+              body: interaction.post.body,
+              number: postNumber,
+              userNumber
+            }
+          };
+        }
+
+        case 'MILESTONE': {
+          if (!interaction.milestone) {
+            throw new Error(
+              `Milestone interaction ${interaction.id} missing milestone data`
+            );
+          }
+
+          if (interaction.websiteId === null) {
+            throw new Error('websiteId is null');
+          }
+
+          let dataInteraction: TTimelineMilestoneInteraction['milestone']['dataInteraction'];
+
+          if (interaction.milestone.dataInteraction) {
+            const { userId } = interaction.milestone.dataInteraction;
+            if (!userId) {
+              throw new Error(
+                `Milestone ${interaction.id} has dataInteraction without userId`
+              );
+            }
+            const userNumber = userNumberMap.get(userId);
+            if (!userNumber) {
+              throw new Error(
+                `User number not found for milestone dataInteraction userId ${userId}`
+              );
+            }
+            dataInteraction = {
+              ...interaction.milestone.dataInteraction,
+              userNumber
+            };
+          } else {
+            dataInteraction = undefined;
+          }
+
+          return {
+            id: interaction.id,
+            type: interaction.type,
+            createdAt: interaction.createdAt,
+            websiteId: interaction.websiteId,
+            milestone: {
+              id: interaction.milestone.id,
+              data: interaction.milestone.data,
+              dataInteraction
+            }
+          };
+        }
+        case 'MOD_ADDED':
+        case 'MOD_REMOVED':
+        case 'BANNED_USER':
+        case 'UNBANNED_USER':
+        case 'BANNED_IPS':
+        case 'UNBANNED_IPS':
+        case 'WATCHED':
+        case 'UNWATCHED': {
+          throw new Error(
+            `Interaction type ${interaction.type} is not supported`
+          );
+        }
+        default:
+          assertNever(interaction.type);
+      }
+    });
+
+  const timelineInteractionsByOldestFirst = transformedInteractions
+    .slice()
+    .reverse();
+
+  return res.status(200).json({
+    interactions: transformedInteractions,
+    companies: buildTimelineCompanies({
+      timelineInteractionsByOldestFirst
+    }),
+    me,
+    meUserNumber,
+    totalPosters
+  } satisfies TTimelineResponseData);
+});
+
 function buildTimelineCompanies(inputs: {
-  timelineInteractionsByOldestFirst: TTimelineInteraction[];
+  timelineInteractionsByOldestFirst: TTimelineInteractionWithNumbers[];
 }): TTimelineCompany[] {
   const timelineCompanies: TTimelineCompany[] = COMPANIES.map((company) => ({
     id: company.id,
@@ -189,7 +441,7 @@ function buildTimelineCompanies(inputs: {
   }));
 
   for (const interaction of inputs.timelineInteractionsByOldestFirst) {
-    if (!isScanInteraction(interaction)) {
+    if (interaction.type !== 'SCAN') {
       continue;
     }
 
@@ -224,4 +476,4 @@ function buildTimelineCompanies(inputs: {
   return timelineCompanies;
 }
 
-export default withPrisma(getTimelineHandler);
+export default getTimelineHandler;

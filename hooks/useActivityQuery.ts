@@ -9,6 +9,7 @@ export function useActivityQuery() {
       const response = await axios.get<TRecentActivityResponseData>(
         '/api/v1/recent-activity'
       );
+
       return response.data;
     },
     refetchOnMount: false,

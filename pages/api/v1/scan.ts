@@ -3,21 +3,44 @@ import {
   getCompanyIdFromDescription,
   type CompanyId
 } from '@/constants/companies';
-import {
-  TIMELINE_INTERACTION_SELECT,
-  type TTimelineScanInteraction
-} from '@/constants/timeline';
-import { getRequestIp } from '@/lib/cf-utils.backend';
+import { getMeFromRefreshedToken } from '@/lib/auth.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
+import type { TResponseDataWithErrors } from '@/lib/response/response-error-utils';
 import { ensureHttpProtocol, getNormalizedHostname } from '@/lib/url';
 import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
+import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
-import type { PrismaClient } from '@prisma/client';
-import type { NextRequest } from 'next/server';
+import type { Prisma, PrismaClient } from '@prisma/client';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 
 const CACHE_WINDOW_DAYS = 7;
+
+// Select for scan interactions - only what this endpoint needs
+const SCAN_INTERACTION_SELECT = {
+  id: true,
+  createdAt: true,
+  type: true,
+  websiteId: true,
+  scan: {
+    select: {
+      changes: true
+    }
+  }
+} satisfies Prisma.InteractionSelect;
+
+// Type-safe scan interaction type derived from the select
+type TScanInteractionBase = Prisma.InteractionGetPayload<{
+  select: typeof SCAN_INTERACTION_SELECT;
+}>;
+
+// Ensure scan is non-nullable
+type TScanInteraction = TScanInteractionBase & {
+  type: 'SCAN';
+  scan: NonNullable<TScanInteractionBase['scan']>;
+};
 
 // Cloudflare Browser Rendering API Response Type
 type TCloudflareBrowserRenderingSuccessResponse = {
@@ -38,66 +61,79 @@ type TCloudflareBrowserRenderingResponse =
   | TCloudflareBrowserRenderingSuccessResponse
   | TCloudflareBrowserRenderingErrorResponse;
 
-export const config = {
-  runtime: 'edge'
-};
+// In case of error WHILE cached scan exists, will fallback to display cached
+// scan ALONG WITH error. If no cached scan, then it just shows the error.
+export type TScanResponseData =
+  | TResponseDataWithErrors
+  | {
+      _errors?: TResponseDataWithErrors['_errors'];
+      isCached?: boolean;
+      scanInteraction: TScanInteraction;
+      website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'> & {
+        _count: { watchers: number };
+      };
+      me: TMe;
+    };
 
-export type TScanResponseData = {
-  isCached?: boolean;
-  scanInteraction: TTimelineScanInteraction;
-  website: Pick<TWebsite, 'id' | 'hostname' | 'isMasjid'>;
-};
-
-const ScanRequestBodySchema = z.object({
+const SCAN_REQUEST_BODY_SCHEMA = z.object({
   url: z.string().min(1, 'URL is required'),
-  force: z.boolean().optional().default(false),
-  userId: z.string().min(1, 'User ID is required')
+  force: z.boolean().optional().default(false)
 });
 
-export type TScanRequestBody = z.infer<typeof ScanRequestBodySchema>;
+export type TScanRequestBody = z.infer<typeof SCAN_REQUEST_BODY_SCHEMA>;
 
-async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
+const newScanHandler = withPrisma(async function newScanHandler(
+  prisma: PrismaClient,
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405
-    });
-  }
-
-  let unknownBody;
-  try {
-    unknownBody = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400
-    });
-  }
-
-  const result = ScanRequestBodySchema.safeParse(unknownBody);
-  if (!result.success) {
-    return new Response(
-      JSON.stringify({
-        error: 'Validation failed',
-        details: result.error.format()
-      }),
-      {
-        status: 400
+    return res.status(405).json({
+      _errors: {
+        formErrors: ['requestErrors.methodNotAllowed'],
+        fieldErrors: {}
       }
-    );
+    });
+  }
+
+  const unknownBody = req.body;
+
+  const result = SCAN_REQUEST_BODY_SCHEMA.safeParse(unknownBody);
+  if (!result.success) {
+    return res.status(400).json({
+      _errors: {
+        formErrors: ['requestErrors.badRequest'],
+        fieldErrors: result.error.flatten().fieldErrors
+      }
+    });
   }
   const body = result.data;
 
-  const { url, force, userId } = body;
+  const { url, force } = body;
+
+  const me = await getMeFromRefreshedToken({
+    prisma,
+    request: req,
+    response: res
+  });
+  const userId = me.id;
+
+  // Check if user is banned
+  if (me.isBanned) {
+    return res.status(403).json({
+      _errors: {
+        formErrors: ['requestErrors.forbidden'],
+        fieldErrors: {}
+      }
+    });
+  }
+
+  // Get or create IP for the user
+  const userIp = await getOrCreateIp(prisma, req, userId);
 
   const hostname = getNormalizedHostname(url);
 
   const homepageUrl = ensureHttpProtocol(hostname);
-
-  // Ensure user exists
-  await prisma.user.upsert({
-    where: { id: userId },
-    update: {},
-    create: { id: userId }
-  });
 
   // Get website id
   const website = await prisma.website.upsert({
@@ -110,7 +146,10 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     select: {
       id: true,
       hostname: true,
-      isMasjid: true
+      isMasjid: true,
+      _count: {
+        select: { watchers: true }
+      }
     }
   });
 
@@ -123,15 +162,29 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     orderBy: {
       createdAt: 'desc'
     },
-    select: TIMELINE_INTERACTION_SELECT
+    select: SCAN_INTERACTION_SELECT
   });
 
   if (precedingScanInteraction) {
     assertIsScanInteraction(precedingScanInteraction);
   }
 
+  let shouldUndoForceScanAsWithinTenMinutesAgo = false;
+  // Check if trying to force a scan even though one exists 10min ago
+  if (force && precedingScanInteraction) {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const isPrecedingScanCreatedWithinTenMinutesAgo =
+      precedingScanInteraction.createdAt > tenMinutesAgo;
+    if (isPrecedingScanCreatedWithinTenMinutesAgo) {
+      shouldUndoForceScanAsWithinTenMinutesAgo = true;
+    }
+  }
+
   // Check if we can return cached scan
-  if (!force && precedingScanInteraction) {
+  if (
+    precedingScanInteraction &&
+    (!force || shouldUndoForceScanAsWithinTenMinutesAgo)
+  ) {
     const cacheWindowStart = new Date();
     cacheWindowStart.setDate(cacheWindowStart.getDate() - CACHE_WINDOW_DAYS);
 
@@ -141,19 +194,50 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
       // Yes, we can use the cached scan as it is within the cache window and we
       // aren't forcing a scan.
 
-      return new Response(
-        JSON.stringify({
-          isCached: true,
-          scanInteraction: precedingScanInteraction,
-          website
-        } satisfies TScanResponseData),
-        { status: 200 }
-      );
+      return res.status(200).json({
+        _errors: shouldUndoForceScanAsWithinTenMinutesAgo
+          ? {
+              formErrors: ['scanErrors.freshScanDeniedAsLastScanIsTooRecent'],
+              fieldErrors: {}
+            }
+          : undefined,
+        isCached: true,
+        scanInteraction: precedingScanInteraction,
+        website,
+        me
+      } satisfies TScanResponseData);
     }
   }
 
   // Perform new scan
-  const websiteHomepageHtml = await fetchHtml(homepageUrl);
+  let websiteHomepageHtml: string;
+  try {
+    websiteHomepageHtml = await fetchHtml(homepageUrl);
+  } catch (error) {
+    if (error instanceof FetchHtmlError) {
+      // If network error and we have cached scan, fallback to cached version with error
+      if (
+        error.key === 'websiteErrors.serviceUnavailable' &&
+        precedingScanInteraction
+      ) {
+        return res.status(200).json({
+          _errors: {
+            formErrors: ['websiteErrors.serviceUnavailable'],
+            fieldErrors: {}
+          },
+          isCached: true,
+          scanInteraction: precedingScanInteraction,
+          website,
+          me
+        } satisfies TScanResponseData);
+      }
+
+      return sendFetchHtmlErrorResponse(res, error);
+    }
+
+    throw error;
+  }
+
   const websiteHomepageHtmlLowerCase = websiteHomepageHtml.toLowerCase();
 
   const detectedCompanyIds: CompanyId[] = [];
@@ -229,16 +313,16 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
       type: 'SCAN',
       websiteId: website.id,
       userId: userId,
+      ipId: userIp.id,
       scan: {
         create: {
           changes,
           websiteId: website.id,
-          userId: userId,
-          userIp: getRequestIp(req) || 'unknown'
+          userId: userId
         }
       }
     },
-    select: TIMELINE_INTERACTION_SELECT
+    select: SCAN_INTERACTION_SELECT
   });
 
   assertIsScanInteraction(scanInteraction);
@@ -262,19 +346,87 @@ async function newScanHandler(prisma: PrismaClient, req: NextRequest) {
     })
   ]);
 
-  return new Response(
-    JSON.stringify({
-      isCached: false,
-      scanInteraction,
-      website: {
-        id: website.id,
-        hostname: website.hostname,
-        isMasjid: isProbablyMasjid
-      }
-    } satisfies TScanResponseData),
-    { status: 200, headers: { 'Content-Type': 'application/json' } }
-  );
+  return res.status(200).json({
+    isCached: false,
+    scanInteraction,
+    website,
+    me
+  } satisfies TScanResponseData);
+});
+
+function sendFetchHtmlErrorResponse(
+  res: NextApiResponse,
+  error: FetchHtmlError
+): void {
+  if (error instanceof FetchHtmlError === false) {
+    console.error('getFetchHtmlErrorResponse: Got non-FetchHtmlError', {
+      error
+    });
+
+    throw error;
+  }
+
+  const statusCodeMap: Record<FetchHtmlError['key'], number> = {
+    'cfBrowserRendering.browserInterrupted': 422,
+    'cfBrowserRendering.creationTimeout': 408,
+    'requestErrors.networkError': 408,
+    'requestErrors.rateLimitExceeded': 429,
+    'requestErrors.serviceUnavailable': 424,
+    'websiteErrors.serviceUnavailable': 424
+  };
+
+  if (error.key in statusCodeMap === false) {
+    console.error('getFetchHtmlErrorResponse: Got unknown error key', {
+      error
+    });
+
+    throw error;
+  }
+
+  const statusCode = statusCodeMap[error.key];
+
+  res.status(statusCode).json({
+    _errors: {
+      formErrors: error.blockRetryUntilDate
+        ? [
+            [
+              error.key,
+              {
+                blockRetryUntilDate: error.blockRetryUntilDate.toISOString()
+              }
+            ]
+          ]
+        : [error.key],
+      fieldErrors: {}
+    }
+  });
 }
+
+class FetchHtmlError extends Error {
+  public blockRetryUntilDate?: Date;
+
+  constructor(
+    public key:
+      | 'cfBrowserRendering.browserInterrupted'
+      | 'cfBrowserRendering.creationTimeout'
+      | 'requestErrors.networkError'
+      | 'requestErrors.rateLimitExceeded'
+      | 'requestErrors.serviceUnavailable'
+      | 'websiteErrors.serviceUnavailable',
+    options?: { blockRetryForSeconds?: number }
+  ) {
+    super(key);
+    this.name = 'FetchHtmlError';
+
+    if (options?.blockRetryForSeconds) {
+      this.blockRetryUntilDate = new Date(
+        Date.now() + options.blockRetryForSeconds * 1000
+      );
+    }
+  }
+}
+
+const DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER = 30;
 
 async function fetchHtml(url: string): Promise<string> {
   const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
@@ -284,27 +436,75 @@ async function fetchHtml(url: string): Promise<string> {
     throw new Error('Cloudflare API credentials not configured');
   }
 
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/content`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cfApiToken}`
-      },
-      body: JSON.stringify({ url })
-    }
-  );
+  let response;
+  try {
+    response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/browser-rendering/content`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cfApiToken}`
+        },
+        body: JSON.stringify({ url })
+      }
+    );
+  } catch (error) {
+    console.error(
+      'Got network error when making request to Cloudflare Browser Rendering API',
+      { error }
+    );
+    // This is probably a network error on my server, not on Cloudflare Browser Rendering API server.
+    throw new FetchHtmlError('requestErrors.networkError');
+  }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Cloudflare API error: ${response.status} ${errorText}`);
+  if (response.status === 429) {
+    const retryAfterSecondsHeader = response.headers.get('Retry-After');
+    const retryAfterSeconds = retryAfterSecondsHeader
+      ? parseInt(retryAfterSecondsHeader)
+      : DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER;
+
+    throw new FetchHtmlError('requestErrors.rateLimitExceeded', {
+      blockRetryForSeconds: retryAfterSeconds
+    });
+  } else if (response.status >= 500) {
+    throw new FetchHtmlError('requestErrors.serviceUnavailable');
   }
 
   const result = (await response.json()) as TCloudflareBrowserRenderingResponse;
 
   if (!result.success) {
-    throw new Error(`Cloudflare API error: ${result.errors.join(', ')}`);
+    console.info(
+      'Failure response data from Cloudflare Browser Rendering API',
+      {
+        responseStatus: response.status,
+        result,
+        responseHeaders: Object.fromEntries(response.headers.entries())
+      }
+    );
+
+    // TODO: is looking at first error good enough?
+    const firstError = result.errors[0];
+
+    if (firstError?.code === 2001) {
+      throw new FetchHtmlError('requestErrors.rateLimitExceeded', {
+        blockRetryForSeconds:
+          DEFAULT_RETRY_BLOCK_FOR_SECONDS_IF_NO_RETRY_AFTER_HEADER
+      });
+    } else if (
+      firstError?.message?.toLowerCase().includes('execution context')
+    ) {
+      throw new FetchHtmlError('cfBrowserRendering.browserInterrupted');
+    } else if (firstError?.message?.toLowerCase().includes('timeout')) {
+      throw new FetchHtmlError('cfBrowserRendering.creationTimeout');
+    } else if (firstError?.code === 5006) {
+      throw new FetchHtmlError('websiteErrors.serviceUnavailable');
+    } else {
+      console.error('Unhandled Cloudflare Browser Rendering API error', {
+        error: firstError
+      });
+      throw new Error('errors.unhandledError');
+    }
   }
 
   return result.result;
@@ -312,8 +512,8 @@ async function fetchHtml(url: string): Promise<string> {
 
 async function maybeCreateFirstScanMilestone(inputs: {
   prisma: PrismaClient;
-  scanInteraction: TTimelineScanInteraction;
-  precedingScanInteraction: TTimelineScanInteraction | null;
+  scanInteraction: TScanInteraction;
+  precedingScanInteraction: TScanInteraction | null;
 }) {
   if (inputs.precedingScanInteraction) {
     return;
@@ -341,7 +541,7 @@ async function maybeCreateFirstScanMilestone(inputs: {
 // 2. "company-added-first-time" - when a company is added for the first time
 async function maybeCreateCompanyAddedMilestone(inputs: {
   prisma: PrismaClient;
-  scanInteraction: TTimelineScanInteraction;
+  scanInteraction: TScanInteraction;
 }) {
   const newCompanyIds = COMPANIES.map(getCompanyIdFromDescription).filter(
     function hasNewInfectionForCompany(companyId) {
@@ -358,6 +558,14 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
       async function checkForPreviusNewDetectionForCompanyThenCreateMilestone(
         companyId
       ) {
+        if (inputs.scanInteraction.websiteId === null) {
+          console.error('Error data', {
+            scanInteraction: inputs.scanInteraction
+          });
+
+          throw new Error('websiteId is null');
+        }
+
         const pastNewDetection = await inputs.prisma.scan.findFirst({
           where: {
             websiteId: inputs.scanInteraction.websiteId,
@@ -398,7 +606,7 @@ async function maybeCreateCompanyAddedMilestone(inputs: {
 // 2. "company-removed-and-no-others" - when a company is removed and no other companies are present
 async function maybeCreateCompanyRemovedMilestone(inputs: {
   prisma: PrismaClient;
-  scanInteraction: TTimelineScanInteraction;
+  scanInteraction: TScanInteraction;
 }) {
   // Identify if any companies were newly removed
   const removedCompanyIds = COMPANIES.map(getCompanyIdFromDescription).filter(
@@ -442,4 +650,4 @@ async function maybeCreateCompanyRemovedMilestone(inputs: {
   }
 }
 
-export default withPrisma(newScanHandler);
+export default newScanHandler;

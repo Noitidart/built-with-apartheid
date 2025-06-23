@@ -23,13 +23,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  // Auth fields - a user may have email but not yet an account.
+  // Having an account is signified by having a password.
+  email    String? @unique
+  password String?
+  isMod    Boolean @default(false)
+  isBanned Boolean @default(false)
+
   // Relations
-  // (One-to-many) One user can have zero or many scans WHILE one scan belongs to exactly one user
-  scans        Scan[]
-  // (One-to-many) One user can have zero or many interactions WHILE one interaction can belong to zero or one user
-  interactions Interaction[]
-  // (One-to-many) One user can have zero or many posts WHILE one post belongs to exactly one user
-  posts        Post[]
+  // (One-to-many-required) One user can have zero or many scans WHILE one scan belongs to exactly one user
+  scans                 Scan[]
+  // (One-to-many-optional) One user can have zero or many interactions WHILE one interaction can belong to zero or one user
+  interactions          Interaction[]
+  // (One-to-many-required) One user can have zero or many posts WHILE one post belongs to exactly one user
+  posts                 Post[]
+  // (Many-to-many) One user can use many IPs WHILE one IP can be used by many users
+  ips                   Ip[]
+  // (Many-to-many) One user can be target of many interactions WHILE one interaction can target many users
+  targetForInteractions Interaction[] @relation("InteractionTargetUsers")
+  // (Many-to-many-optional) One user can watch zero or many websites WHILE one website can be watched by zero or many users
+  watchedWebsites       Website[]     @relation("WatchedWebsites")
 }
 
 model Website {
@@ -40,31 +53,62 @@ model Website {
   updatedAt DateTime @default(now()) @updatedAt
 
   // Relations
-  // (One-to-many) One website can have zero or many scans WHILE one scan belongs to exactly one website
+  // (One-to-many-required) One website can have zero or many scans WHILE one scan belongs to exactly one website
   scans        Scan[]
-  // (One-to-many) One website can have zero or many interactions WHILE one interaction must belong to exactly one website
+  // (One-to-many-optional) One website can have zero or many interactions WHILE one interaction can belong to zero or one website
   interactions Interaction[]
-  // (One-to-many) One website can have zero or many posts WHILE one post belongs to exactly one website
+  // (One-to-many-required) One website can have zero or many posts WHILE one post belongs to exactly one website
   posts        Post[]
-  // (One-to-many) One website can have zero or many milestones WHILE one milestone belongs to exactly one website
+  // (One-to-many-optional) One website can have zero or many milestones WHILE one milestone can belong to zero or one website
   milestones   Milestone[]
+  // (Many-to-many-optional) One website can be watched by zero or many users WHILE one user can watch zero or many websites
+  watchers     User[]        @relation("WatchedWebsites")
+}
+
+model Ip {
+  id    Int    @id @default(autoincrement())
+  value String @unique
+
+  // CF metadata
+  city          String?
+  country       String?
+  latitude      String?
+  longitude     String?
+  postalCode    String?
+  metroCode     String?
+  region        String?
+  regionCode    String?
+  timezone      String?
+  botScore      Int?
+  isVerifiedBot Boolean @default(false)
+
+  isBanned  Boolean  @default(false)
+  createdAt DateTime @default(now()) // First seen
+  updatedAt DateTime @default(now()) @updatedAt // Last seen
+
+  // Relations
+  // (Many-to-many) One IP can be used by many users WHILE one user can use many IPs
+  users                 User[]
+  // (One-to-many-required) One IP can have zero or many interactions WHILE one interaction belongs to exactly one IP
+  interactions          Interaction[]
+  // (Many-to-many) One IP can be target of many interactions WHILE one interaction can target many IPs
+  targetForInteractions Interaction[] @relation("InteractionTargetIps")
 }
 
 model Scan {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
-  userIp    String
 
   /// [TCompanyStatusChanges]
   changes Json
 
   // Relations
-  // (One-to-many) One scan belongs to exactly one user WHILE a user can have zero or many scans
+  // (One-to-many-required) One scan belongs to exactly one user WHILE a user can have zero or many scans
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  // (One-to-many) One scan belongs to exactly one website WHILE a website can have zero or many scans
+  // (One-to-many-required) One scan belongs to exactly one website WHILE a website can have zero or many scans
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   websiteId Int
 
@@ -78,15 +122,23 @@ model Interaction {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @default(now()) @updatedAt
   type      InteractionType
+  /// [TInteractionData]
+  data      Json?
 
   // Relations
-  // (One-to-many) One interaction can belong to zero or one user WHILE a user can have zero or many interactions
+  // (One-to-many-optional) One interaction can belong to zero or one user WHILE a user can have zero or many interactions
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String?
 
-  // (One-to-many) One interaction must belong to exactly one website WHILE a website can have zero or many interactions
-  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  websiteId Int
+  // (One-to-many-optional) One interaction can belong to zero or one website WHILE a website can have zero or many interactions
+  // Note: MOD_ADDED and MOD_REMOVED interaction types do not have an associated website
+  website   Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int?
+
+  // (One-to-many-optional) One interaction can belong to zero or one IP WHILE an IP can have zero or many interactions
+  // Note: System-generated interactions (like milestones) will not have an associated IP
+  ip   Ip?  @relation(fields: [ipId], references: [id])
+  ipId Int?
 
   // (One-to-one) One interaction can have zero or one scan WHILE a scan belongs to exactly one interaction
   scan Scan?
@@ -94,19 +146,32 @@ model Interaction {
   // (One-to-one) One interaction can have zero or one milestone WHILE a milestone belongs to exactly one interaction
   milestone Milestone? @relation("MilestoneInteraction")
 
-  // (One-to-many) One interaction can have zero or many milestone data interactions WHILE a milestone data interaction belongs to exactly one interaction
+  // (One-to-many-required) One interaction can have zero or many milestone data interactions WHILE a milestone data interaction belongs to exactly one interaction
   // Note: Only human interactions (non-"MILESTONE type" interactions) can be the interaction referred to by milestone.dataInteraction.
   // Note: Is many because one scan can detect multiple companies, which means two milestones with milestone.data.type of "company-added".
   dataInteractionForMilestones Milestone[] @relation("MilestoneDataInteraction")
 
   // (One-to-one) One interaction can have zero or one post WHILE a post belongs to exactly one interaction
   post Post?
+
+  // (Many-to-many) One interaction can target many users WHILE one user can be target of many interactions
+  targetUsers User[] @relation("InteractionTargetUsers")
+  // (Many-to-many) One interaction can target many IPs WHILE one IP can be target of many interactions
+  targetIps   Ip[]   @relation("InteractionTargetIps")
 }
 
 enum InteractionType {
   SCAN
   POST
   MILESTONE
+  MOD_ADDED
+  MOD_REMOVED
+  BANNED_USER
+  UNBANNED_USER
+  BANNED_IPS
+  UNBANNED_IPS
+  WATCHED
+  UNWATCHED
 }
 
 model Post {
@@ -114,14 +179,13 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
   body      String
-  userIp    String
 
   // Relations
-  // (One-to-many) One post belongs to exactly one user WHILE a user can have zero or many posts
+  // (One-to-many-required) One post belongs to exactly one user WHILE a user can have zero or many posts
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  // (One-to-many) One post belongs to exactly one website WHILE a website can have zero or many posts
+  // (One-to-many-required) One post belongs to exactly one website WHILE a website can have zero or many posts
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   websiteId Int
 
@@ -138,15 +202,16 @@ model Milestone {
   data      Json
 
   // Relations
-  // (One-to-many) One milestone belongs to exactly one website WHILE a website can have zero or many milestones
-  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  websiteId Int
+  // (One-to-many-optional) One milestone can belong to zero or one website WHILE a website can have zero or many milestones
+  // Note: MOD_* interaction types do not have an associated website (though no MOD_* milestones are planned)
+  website   Website? @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId Int?
 
   // (One-to-one) One milestone belongs to exactly one interaction WHILE an interaction can have zero or one milestone
   interaction   Interaction @relation("MilestoneInteraction", fields: [interactionId], references: [id], onDelete: Cascade)
   interactionId Int         @unique
 
-  // (One-to-many) One milestone data belongs to exactly one interaction WHILE an interaction can have zero or many milestone data
+  // (One-to-many-required) One milestone data belongs to exactly one interaction WHILE an interaction can have zero or many milestone data
   dataInteraction   Interaction @relation("MilestoneDataInteraction", fields: [dataInteractionId], references: [id], onDelete: Cascade)
   dataInteractionId Int
 }

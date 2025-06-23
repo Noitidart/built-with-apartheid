@@ -2,7 +2,13 @@ import type { CompanyId } from '@/constants/companies';
 import type { Scan } from '@prisma/client';
 
 export type TScan = Scan;
-type TCompanyStatus = 'new' | 'removed' | 'still-present';
+export type TCompanyStatus = 'new' | 'removed' | 'still-present';
+
+export const COMPANY_STATUS: Record<TCompanyStatus, TCompanyStatus> = {
+  new: 'new',
+  removed: 'removed',
+  'still-present': 'still-present'
+} as const;
 
 declare global {
   namespace PrismaJson {

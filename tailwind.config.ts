@@ -11,6 +11,21 @@ export default {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)'
+      },
+      animation: {
+        'gradient-sweep': 'gradient-sweep 2s ease infinite'
+      },
+      keyframes: {
+        'gradient-sweep': {
+          '0%, 100%': {
+            'background-size': '200% 200%',
+            'background-position': 'left center'
+          },
+          '50%': {
+            'background-size': '200% 200%',
+            'background-position': 'right center'
+          }
+        }
       }
     }
   },

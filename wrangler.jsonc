@@ -4,13 +4,24 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "built-with-isnotreal",
-  "compatibility_date": "2025-03-03",
-  "compatibility_flags": ["nodejs_compat"],
-  "pages_build_output_dir": ".vercel/output/static",
+  "name": "built-with-apartheid",
+  "main": "worker.ts",
+  "compatibility_date": "2025-03-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    // This array should be the keys from CRON_ROUTES in `worker.ts`. If you
+    // add a new cron route with a new cron expression, and don't add that
+    // expression here, the worker will not trigger `scheduled()` which will
+    // cause the cron route to not be called.
+    "crons": ["0 0 1 * *"]
+  }
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -28,10 +39,7 @@
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
-  "vars": {
-    "CLOUDFLARE_ACCOUNT_ID": "6f4be79fdbac1b2b06d80c0f2465d228"
-    // CLOUDFLARE_API_TOKEN has been moved to a secret
-  }
+  // "vars": { "MY_VARIABLE": "production_value" },
   /**
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/
