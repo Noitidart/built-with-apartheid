@@ -28,6 +28,7 @@
 		"motion": "^12.18.1",
 		"nanoid": "^5.1.5",
 		"next": "15.3.3",
+		"next-plausible": "^3.12.4",
 		"prisma": "^6.9.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
