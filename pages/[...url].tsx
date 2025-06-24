@@ -25,6 +25,7 @@ import delay from 'delay';
 import { get } from 'lodash';
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
+import { usePlausible } from 'next-plausible';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -44,12 +45,23 @@ function UrlPage() {
         : undefined;
 
   const shouldScanBypassCache = useRef(false);
+  const scanSourceRef = useRef<'search_form' | 'url_navigation' | 'fresh_scan_button'>('url_navigation');
+  const scanStartTimeRef = useRef<number>(0);
+  const trackScanInitiated = useTrackScanInitiated({
+    source: scanSourceRef.current,
+    hostname: url || ''
+  });
+
   const scanQuery = useQuery({
     queryKey: ['scan', url],
     queryFn: async function fetchUrlScan() {
       if (!url) {
         throw new Error('No URL provided');
       }
+
+      // Track scan initiated
+      scanStartTimeRef.current = Date.now();
+      trackScanInitiated();
 
       const force = shouldScanBypassCache.current;
 
@@ -105,11 +117,44 @@ function UrlPage() {
 
   const forceScan = function forceScan() {
     shouldScanBypassCache.current = true;
+    scanSourceRef.current = 'fresh_scan_button';
     // So it resets the error count. As opposted to scanQuery.refetch
     queryClient.resetQueries({ queryKey: ['scan', url] });
   };
 
   const shouldShowIntro = !router.isReady || !url;
+
+  // Track scan completed
+  const trackScanCompleted = useTrackScanCompleted({
+    startTime: scanStartTimeRef.current,
+    hostname: url || '',
+    isCached: scanQuery.data?.isCached || false,
+    data: scanQuery.data
+  });
+
+  useEffect(
+    function trackScanSuccess() {
+      if (scanQuery.isSuccess && scanQuery.data && !scanQuery.isFetching) {
+        trackScanCompleted();
+      }
+    },
+    [scanQuery.isSuccess, scanQuery.data, scanQuery.isFetching, trackScanCompleted]
+  );
+
+  // Track scan errors
+  const trackScanError = useTrackScanError({
+    error: scanQuery.error,
+    attemptNumber: scanQuery.errorUpdateCount
+  });
+
+  useEffect(
+    function trackScanFailure() {
+      if (scanQuery.isError && !scanQuery.isFetching) {
+        trackScanError();
+      }
+    },
+    [scanQuery.isError, scanQuery.isFetching, scanQuery.errorUpdateCount, trackScanError]
+  );
 
   useEffect(
     function syncUrlInputWithUrl() {
@@ -133,6 +178,7 @@ function UrlPage() {
 
     // Use cache if available.
     shouldScanBypassCache.current = false;
+    scanSourceRef.current = 'search_form';
 
     const formData = new FormData(e.currentTarget);
     const urlValue = formData.get('url');
@@ -818,6 +864,19 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
     data.scanInteraction.scan.changes
   );
   const hasDetectedCompanies = detectedCompanies.length > 0;
+  
+  const trackFreshScanBlocked = useTrackFreshScanBlocked();
+  
+  useEffect(
+    function trackBlockedFreshScan() {
+      if (data.isCached && hasFormError('scanErrors.freshScanDeniedAsLastScanIsTooRecent', data)) {
+        trackFreshScanBlocked();
+      }
+    },
+    // Only run once when component mounts with this data
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   return (
     <>
@@ -910,6 +969,103 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
       )}
     </>
   );
+}
+
+// Scan tracking functions
+function useTrackScanInitiated(input: {
+  source: 'search_form' | 'url_navigation' | 'fresh_scan_button';
+  hostname: string;
+}) {
+  const plausible = usePlausible();
+  
+  return function trackScanInitiated() {
+    plausible('scan_initiated', {
+      props: {
+        source: input.source,
+        hostname: input.hostname
+      }
+    });
+  };
+}
+
+function useTrackScanCompleted(input: {
+  startTime: number;
+  hostname: string;
+  isCached: boolean;
+  data: TScanResponseData | undefined;
+}) {
+  const plausible = usePlausible();
+  
+  return function trackScanCompleted() {
+    if (!input.data || !('website' in input.data)) return;
+    
+    const duration = Math.round((Date.now() - input.startTime) / 1000);
+    const infectionCount = getDetectedCompanies(
+      input.data.scanInteraction.scan.changes
+    ).length;
+    
+    plausible('scan_completed', {
+      props: {
+        duration_seconds: duration,
+        result: 'success',
+        infection_count: infectionCount,
+        is_cached: input.isCached,
+        is_masjid: input.data.website.isMasjid
+      }
+    });
+  };
+}
+
+function useTrackScanError(input: {
+  error: unknown;
+  attemptNumber: number;
+}) {
+  const plausible = usePlausible();
+  
+  return function trackScanError() {
+    const errorInfo = getScanErrorInfo(input.error);
+    
+    plausible('scan_error', {
+      props: {
+        error_type: errorInfo.errorKey,
+        retry_attempt: input.attemptNumber
+      }
+    });
+  };
+}
+
+function useTrackFreshScanBlocked() {
+  const plausible = usePlausible();
+  
+  return function trackFreshScanBlocked() {
+    plausible('fresh_scan_blocked', {
+      props: {
+        reason: 'too_recent'
+      }
+    });
+  };
+}
+
+function getScanErrorInfo(error: unknown): { errorKey: string } {
+  if (!axios.isAxiosError(error)) {
+    return { errorKey: 'unknown_error' };
+  }
+  
+  const firstFormError = get(error, 'response.data._errors.formErrors[0]');
+  let errorKey: string;
+  
+  if (
+    Array.isArray(firstFormError) &&
+    typeof firstFormError[0] === 'string'
+  ) {
+    errorKey = firstFormError[0];
+  } else if (typeof firstFormError === 'string') {
+    errorKey = firstFormError;
+  } else {
+    errorKey = 'unknown_error';
+  }
+  
+  return { errorKey };
 }
 
 export default UrlPage;
