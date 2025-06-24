@@ -20,10 +20,11 @@ import type { TWebsite } from '@/types/website';
 import axios from 'axios';
 import classnames from 'classnames';
 import { AnimatePresence, motion } from 'motion/react';
+import { usePlausible } from 'next-plausible';
 import { memo, useEffect, useState } from 'react';
 
 type TimelineProps = {
-  website: Pick<TWebsite, 'id'>;
+  website: Pick<TWebsite, 'id' | 'isMasjid'>;
 };
 
 function useRateLimitCountdown() {
@@ -101,8 +102,21 @@ function Timeline({ website }: TimelineProps) {
   }
 
   // Calculate community stats
-  const totalScans = data.interactions.filter((i) => i.type === 'SCAN').length;
+  const totalScans = data.interactions.filter(function isScanType(interaction) {
+    return interaction.type === 'SCAN';
+  }).length;
   const totalPosters = data.totalPosters;
+  
+  // Calculate current infection count
+  const activeInfectionCount = data.companies.filter(isActive).length;
+  
+  // Check if user has posted before
+  const userHasPosted = data.interactions.some(
+    function isPostByCurrentUser(interaction) {
+      return interaction.type === 'POST' && interaction.post?.userNumber === data.meUserNumber;
+    }
+  );
+  const isFirstPost = !userHasPosted;
 
   return (
     <div className="w-full space-y-6">
@@ -129,6 +143,9 @@ function Timeline({ website }: TimelineProps) {
             websiteId={website.id}
             meUserNumber={data.meUserNumber}
             refetchTimelineQuery={timelineQuery.refetch}
+            isMasjid={website.isMasjid}
+            infectionCount={activeInfectionCount}
+            isFirstPost={isFirstPost}
           />
         </div>
 
@@ -271,23 +288,64 @@ type PostFormProps = {
   meUserNumber: number;
   /** Should be awaitable to know when the refetch finishes */
   refetchTimelineQuery: () => Promise<unknown>;
+  isMasjid: boolean;
+  infectionCount: number;
+  isFirstPost: boolean;
 };
 
 function PostForm({
   websiteId,
   meUserNumber,
-  refetchTimelineQuery
+  refetchTimelineQuery,
+  isMasjid,
+  infectionCount,
+  isFirstPost
 }: PostFormProps) {
   const [postContent, setPostContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { countdown, rateLimitError, setRateLimitError } =
     useRateLimitCountdown();
 
+  const plausible = usePlausible();
+  
+  const trackPostSubmitted = function trackPostSubmitted(characterCount: number) {
+    plausible('post_submitted', {
+      props: {
+        character_count: characterCount,
+        is_first_post: isFirstPost,
+        infection_count: infectionCount,
+        is_masjid: isMasjid
+      }
+    });
+  };
+
+  const trackPostCompleted = function trackPostCompleted(durationMs: number) {
+    plausible('post_completed', {
+      props: {
+        duration_ms: durationMs,
+        is_masjid: isMasjid
+      }
+    });
+  };
+
+  const trackPostError = function trackPostError(errorType: 'rate_limit' | 'network_error') {
+    plausible('post_error', {
+      props: {
+        error_type: errorType,
+        is_masjid: isMasjid
+      }
+    });
+  };
+
   const submitPost = async function submitPost(e: React.FormEvent) {
     e.preventDefault();
     if (!postContent.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
+    const startTime = Date.now();
+    
+    // Track post submission
+    trackPostSubmitted(postContent.length);
 
     try {
       await axios.post<TPostResponseData>(`/api/v1/${websiteId}/post`, {
@@ -295,6 +353,10 @@ function PostForm({
       } satisfies TPostRequestBody);
 
       await refetchTimelineQuery();
+
+      // Track successful completion
+      const duration = Date.now() - startTime;
+      trackPostCompleted(duration);
 
       setPostContent('');
       setRateLimitError(null);
@@ -311,9 +373,11 @@ function PostForm({
             formError[0] === 'requestErrors.rateLimitExceeded'
           ) {
             setRateLimitError(formError as [string, { retryAfter: string }]);
+            trackPostError('rate_limit');
           }
         }
       } else {
+        trackPostError('network_error');
         alert('Failed to submit post. Please try again later.');
       }
     } finally {
