@@ -964,6 +964,7 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
           <CompanyList
             companyIds={detectedCompanies}
             isProbablyMasjid={data.website.isMasjid}
+            hostname={data.website.hostname}
           />
         </>
       )}

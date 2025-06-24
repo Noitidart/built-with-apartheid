@@ -1,21 +1,51 @@
 import { COMPANIES, CompanyId } from '@/constants/companies';
 import { AnimatePresence, motion } from 'framer-motion';
+import { usePlausible } from 'next-plausible';
 import { useState } from 'react';
 
 interface CompanyListProps {
   companyIds: CompanyId[];
   isProbablyMasjid?: boolean;
+  hostname: string;
 }
 
 export default function CompanyList({
   companyIds,
-  isProbablyMasjid
+  isProbablyMasjid,
+  hostname
 }: CompanyListProps) {
+  const plausible = usePlausible();
   const [expandedCompany, setExpandedCompany] = useState<CompanyId | null>(
     null
   );
 
-  const toggleExpanded = (id: CompanyId) => {
+  const toggleExpanded = function toggleCompanyDetails(id: CompanyId) {
+    const isExpanding = expandedCompany !== id;
+    
+    if (isExpanding) {
+      // Track company details expanded
+      const company = COMPANIES.find((c) => c.id === id);
+      plausible('company_details_expanded', {
+        props: {
+          company_id: id,
+          company_name: company?.name || id,
+          hostname: hostname,
+          is_masjid: isProbablyMasjid || false
+        }
+      });
+    } else {
+      // Track company details collapsed
+      const company = COMPANIES.find((c) => c.id === id);
+      plausible('company_details_collapsed', {
+        props: {
+          company_id: id,
+          company_name: company?.name || id,
+          hostname: hostname,
+          is_masjid: isProbablyMasjid || false
+        }
+      });
+    }
+    
     setExpandedCompany(expandedCompany === id ? null : id);
   };
 
