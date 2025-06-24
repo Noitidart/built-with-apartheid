@@ -197,6 +197,8 @@ function UrlPage() {
                 placeholder="Enter website URL (e.g., example.com)"
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 disabled={scanQuery.isFetching}
+                autoCapitalize="off"
+                autoCorrect="off"
                 required
               />
 
