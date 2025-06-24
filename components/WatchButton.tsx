@@ -16,19 +16,21 @@ import {
   ShieldCheckIcon,
   XIcon
 } from 'lucide-react';
+import { usePlausible } from 'next-plausible';
 import { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import isEmail from 'sane-email-validation';
 
 type WatchButtonProps = {
   me: Pick<TMe, 'id' | 'email' | 'watchedWebsites'>;
-  website: Pick<Website, 'id' | 'hostname'> & {
+  website: Pick<Website, 'id' | 'hostname' | 'isMasjid'> & {
     _count: { watchers: number };
   };
 };
 
 function WatchButton({ me, website }: WatchButtonProps) {
   const queryClient = useQueryClient();
+  const plausible = usePlausible();
   const [isWatchModalOpen, setIsWatchModalOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [manageAction, setManageAction] = useState<
@@ -45,9 +47,39 @@ function WatchButton({ me, website }: WatchButtonProps) {
 
   useSetupReactModalAccessibility();
 
+  // Tracking functions
+  const trackWatchStarted = function trackWatchStarted(emailProvided: boolean) {
+    plausible('watch_started', {
+      props: {
+        hostname: website.hostname,
+        email_provided: emailProvided,
+        existing_watchers: website._count.watchers,
+        is_masjid: website.isMasjid
+      }
+    });
+  };
+
+  const trackWatchStopped = function trackWatchStopped() {
+    plausible('watch_stopped', {
+      props: {
+        hostname: website.hostname,
+        is_masjid: website.isMasjid
+      }
+    });
+  };
+
+  const trackWatchEmailUpdated = function trackWatchEmailUpdated() {
+    plausible('watch_email_updated', {
+      props: {
+        hostname: website.hostname,
+        is_masjid: website.isMasjid
+      }
+    });
+  };
+
   const watchMutation = useMutation({
     mutationFn: (data: { email?: string }) => watchWebsite(website.id, data),
-    onSuccess: function delegateToWatchSuccessHandler(data) {
+    onSuccess: function delegateToWatchSuccessHandler(data, variables) {
       return handleWatchMutationSuccess({
         data,
         setIsWatchModalOpen,
@@ -56,7 +88,10 @@ function WatchButton({ me, website }: WatchButtonProps) {
         watcherActions,
         queryClient,
         websiteId: website.id,
-        websiteHostname: website.hostname
+        websiteHostname: website.hostname,
+        trackWatchStarted,
+        trackWatchEmailUpdated,
+        emailProvided: !!variables.email
       });
     }
   });
@@ -72,7 +107,8 @@ function WatchButton({ me, website }: WatchButtonProps) {
         setStatusMessage,
         watcherActions,
         queryClient,
-        websiteId: website.id
+        websiteId: website.id,
+        trackWatchStopped
       });
     }
   });
@@ -417,6 +453,9 @@ type WatchSuccessHandlerParams = {
   queryClient: QueryClient;
   websiteId: number;
   websiteHostname: string;
+  trackWatchStarted: (emailProvided: boolean) => void;
+  trackWatchEmailUpdated: () => void;
+  emailProvided: boolean;
 };
 
 function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
@@ -428,7 +467,10 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
     watcherActions,
     queryClient,
     websiteId,
-    websiteHostname
+    websiteHostname,
+    trackWatchStarted,
+    trackWatchEmailUpdated,
+    emailProvided
   } = params;
 
   setIsWatchModalOpen(false);
@@ -441,6 +483,7 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
       setStatusMessage('You are now watching this site');
       watcherActions.setIsWatched(true);
       watcherActions.incrementWatcherCount();
+      trackWatchStarted(emailProvided);
       queryClient.setQueryData<TScanResponseData>(
         ['scan', url],
         function updateWatchStateInQuery(oldData) {
@@ -458,6 +501,7 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
       );
       watcherActions.setIsWatched(true);
       watcherActions.incrementWatcherCount();
+      trackWatchStarted(emailProvided);
       queryClient.setQueryData<TScanResponseData>(
         ['scan', url],
         function updateWatchStateAndEmailInQuery(oldData) {
@@ -479,6 +523,7 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
       break;
     case 'change-email':
       setStatusMessage('Your notification email has been updated');
+      trackWatchEmailUpdated();
       queryClient.setQueryData<TScanResponseData>(
         ['scan', url],
         function updateEmailInQuery(oldData) {
@@ -506,6 +551,7 @@ type UnwatchSuccessHandlerParams = {
   };
   queryClient: QueryClient;
   websiteId: number;
+  trackWatchStopped: () => void;
 };
 
 function handleUnwatchMutationSuccess(
@@ -517,7 +563,8 @@ function handleUnwatchMutationSuccess(
     setStatusMessage,
     watcherActions,
     queryClient,
-    websiteId
+    websiteId,
+    trackWatchStopped
   } = params;
 
   setIsManageModalOpen(false);
@@ -529,6 +576,9 @@ function handleUnwatchMutationSuccess(
     // Update local state
     watcherActions.setIsWatched(false);
     watcherActions.decrementWatcherCount();
+
+    // Track the watch stopped event
+    trackWatchStopped();
 
     // Set success message
     setStatusMessage('You have stopped watching this site');
