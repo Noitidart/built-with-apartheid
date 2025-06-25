@@ -13,21 +13,23 @@ export default {
         foreground: 'var(--foreground)'
       },
       animation: {
-        'gradient-sweep': 'gradient-sweep 2s ease infinite'
+        shimmer: 'shimmer 5s ease-in-out infinite'
       },
       keyframes: {
-        'gradient-sweep': {
-          '0%, 100%': {
-            'background-size': '200% 200%',
-            'background-position': 'left center'
+        shimmer: {
+          '0%': {
+            'background-position': '200% 0'
           },
           '50%': {
-            'background-size': '200% 200%',
-            'background-position': 'right center'
+            'background-position': '0% 0'
+          },
+          '100%': {
+            'background-position': '-200% 0'
           }
         }
       }
     }
   },
+
   plugins: []
 } satisfies Config;
