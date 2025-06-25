@@ -4,6 +4,7 @@ import CompanyList from '@/components/CompanyList';
 import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
 import WatchButton from '@/components/WatchButton';
+import WatchedSitesSidebar from '@/components/WatchedSitesSidebar';
 import type { CompanyId } from '@/constants/companies';
 import useForceRender from '@/hooks/useForceRender';
 import {
@@ -359,6 +360,8 @@ function UrlPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <WatchedSitesSidebar />
       </main>
 
       <footer className="mt-16 py-6 border-t border-gray-200 dark:border-gray-800 text-center text-gray-500 dark:text-gray-400 w-full">
