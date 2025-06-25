@@ -55,7 +55,7 @@ function StatsDisplay({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="text-center space-x-2 text-xl font-bold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-indigo-400 to-purple-600 bg-clip-text text-transparent animate-gradient-sweep">
+      <div className="text-center space-x-2 text-xl font-bold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-indigo-300 via-purple-700 to-indigo-300 bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
         <div className="flex items-center">
           <span
             // * "text-black" - so it doesn't get the gradient
@@ -80,15 +80,9 @@ function StatsDisplay({
         </span>
       </div>
 
-      <div className="text-center space-x-2 text-lg font-semibold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-pink-400 to-rose-600 bg-clip-text text-transparent animate-gradient-sweep">
+      <div className="text-center space-x-2 text-lg font-semibold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-pink-300 via-rose-700 to-pink-300 bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
         <div className="flex items-center">
-          <span
-            // * "text-black" - so it doesn't get the gradient
-            className="text-black -translate-y-px mr-2"
-          >
-            👥
-          </span>
-
+          <span className="text-black -translate-y-px mr-2">👥</span>
           <span>{uniquePosters7d.total} people reached out</span>
         </div>
 
