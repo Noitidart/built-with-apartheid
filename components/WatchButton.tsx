@@ -1,4 +1,5 @@
 import Button from '@/components/Button';
+import { getWatchedSitesQuerySignature } from '@/components/WatchedSitesSidebar';
 import type { TScanResponseData } from '@/pages/api/v1/scan';
 import type { TMe } from '@/types/user';
 import type { Website } from '@prisma/client';
@@ -446,6 +447,10 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
           return updateScanQueryForWatch(oldData, websiteId, websiteHostname);
         }
       );
+      // Reset watched sites query to refresh the sidebar
+      queryClient.resetQueries({
+        queryKey: getWatchedSitesQuerySignature().queryKey
+      });
       break;
     case 'watch-and-change-email':
       setStatusMessage(
@@ -464,6 +469,10 @@ function handleWatchMutationSuccess(params: WatchSuccessHandlerParams): void {
           );
         }
       );
+      // Reset watched sites query to refresh the sidebar
+      queryClient.resetQueries({
+        queryKey: getWatchedSitesQuerySignature().queryKey
+      });
       break;
     case 'noop-already-watching':
       setStatusMessage('You are already watching this site');
@@ -533,6 +542,11 @@ function handleUnwatchMutationSuccess(
         return updateScanQueryForUnwatch(oldData, websiteId);
       }
     );
+
+    // Reset watched sites query to refresh the sidebar
+    queryClient.resetQueries({
+      queryKey: getWatchedSitesQuerySignature().queryKey
+    });
   }
 }
 
@@ -856,8 +870,8 @@ function ManageWatchModalContent({
                   ? 'Updating...'
                   : 'Update Email'
                 : unwatchMutationIsPending
-                ? 'Stopping...'
-                : 'Stop Watching'
+                  ? 'Stopping...'
+                  : 'Stop Watching'
             }
             size="md"
             className={
@@ -889,7 +903,7 @@ function WatchModal<TContentProps extends object>(
       isOpen={isOpen}
       onRequestClose={onClose}
       className="w-full max-w-md mx-auto mt-20 bg-white dark:bg-gray-800 rounded-lg shadow-xl outline-none"
-      overlayClassName="fixed inset-0 bg-black/25 dark:bg-black/50 flex items-start justify-center p-4 overflow-y-auto"
+      overlayClassName="fixed inset-0 bg-black/25 dark:bg-black/50 flex items-start justify-center p-4 overflow-y-auto z-[100]"
       contentLabel={title}
     >
       <div className="p-6">
