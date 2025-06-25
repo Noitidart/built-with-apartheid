@@ -89,11 +89,18 @@ function WatchedSitesSidebar() {
                       {site.lastScan
                         ? new Date(site.lastScan.createdAt).toLocaleDateString()
                         : '–'}
-                      {site.lastScan && site.lastScan.infected && (
+                      {site.lastScan && site.lastScan.infected ? (
                         <>
                           {' '}
                           <span className="text-red-600 dark:text-red-400">
                             (Still Infected)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {' '}
+                          <span className="text-green-600 dark:text-green-400">
+                            (Clean)
                           </span>
                         </>
                       )}
