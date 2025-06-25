@@ -1,11 +1,28 @@
 import Link from 'next/link';
+import { usePlausible } from 'next-plausible';
 
-const LearnTmaButton = () => {
+interface LearnTmaButtonProps {
+  hostname?: string;
+}
+
+const LearnTmaButton = ({ hostname }: LearnTmaButtonProps = {}) => {
+  const plausible = usePlausible();
+  
+  const trackTmaLinkClick = function trackTmaLinkClick() {
+    plausible('tma_link_clicked', {
+      props: {
+        hostname: hostname || 'unknown',
+        source: 'company_article'
+      }
+    });
+  };
+  
   return (
     <Link
       href="https://themasjidapp.org"
       target="_blank"
       rel="noopener noreferrer"
+      onClick={trackTmaLinkClick}
       className="inline-flex items-center justify-center w-full px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
     >
       Learn How The Masjid App Can Help Your Masjid

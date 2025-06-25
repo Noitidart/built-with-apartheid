@@ -8,6 +8,7 @@ type TCompanyArticleLayoutProps = {
   description: string | React.ReactNode;
   implications: string[];
   isProbablyMasjid?: boolean;
+  hostname?: string;
   masjidSection: {
     subtitle: string;
     description: string | React.ReactNode;
@@ -26,6 +27,7 @@ const CompanyArticleLayout = function CompanyArticleLayout(
     description,
     implications,
     isProbablyMasjid,
+    hostname,
     masjidSection
   } = props;
 
@@ -55,6 +57,8 @@ const CompanyArticleLayout = function CompanyArticleLayout(
         <EthicalAlternativesButton
           companySlug={companySlug}
           companyName={companyName}
+          hostname={hostname}
+          isMasjid={isProbablyMasjid}
         />
       </div>
 
@@ -110,7 +114,7 @@ const CompanyArticleLayout = function CompanyArticleLayout(
               {masjidSection.conclusion}
             </p>
 
-            <LearnTmaButton />
+            <LearnTmaButton hostname={hostname} />
           </div>
         </div>
       )}

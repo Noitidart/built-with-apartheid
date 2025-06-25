@@ -1,22 +1,41 @@
 import Link from 'next/link';
+import { usePlausible } from 'next-plausible';
 import React from 'react';
 
 interface EthicalAlternativesButtonProps {
   companySlug: string;
   companyName: string;
   className?: string;
+  hostname?: string;
+  isMasjid?: boolean;
 }
 
 const EthicalAlternativesButton: React.FC<EthicalAlternativesButtonProps> = ({
   companySlug,
   companyName,
-  className = ''
+  className = '',
+  hostname,
+  isMasjid
 }) => {
+  const plausible = usePlausible();
+  
+  const trackEthicalAlternativesClick = function trackEthicalAlternativesClick() {
+    plausible('ethical_alternatives_clicked', {
+      props: {
+        company_slug: companySlug,
+        company_name: companyName,
+        hostname: hostname || 'unknown',
+        is_masjid: isMasjid || false
+      }
+    });
+  };
+  
   return (
     <div className="flex flex-col items-start w-full">
       <Link
         href={`https://www.israelitechalternatives.com/company/${companySlug}/`}
         target="_blank"
+        onClick={trackEthicalAlternativesClick}
         // Let israelitechalternatives.com see the referrer
         // rel="noopener noreferrer"
         className={`inline-flex items-center justify-center sm:justify-start px-3 sm:px-5 py-2 sm:py-3 bg-blue-600 text-white font-medium text-sm sm:text-base rounded-lg hover:bg-blue-700 transition-colors ${className}`}
