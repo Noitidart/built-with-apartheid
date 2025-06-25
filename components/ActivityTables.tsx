@@ -79,7 +79,7 @@ function StatsDisplay({
           {siteSlogan}
         </span>
       </div>
-
+      {/* changed animation */}
       <div className="text-center space-x-2 text-lg font-semibold flex flex-col md:flex-row items-center justify-center bg-gradient-to-r from-pink-400 to-rose-700 bg-clip-text text-transparent animate-gradient-sweep">
         <div className="flex items-center">
           <span
