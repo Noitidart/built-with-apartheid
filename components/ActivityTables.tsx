@@ -4,6 +4,7 @@ import { assertNever } from '@/lib/typescript';
 import classnames from 'classnames';
 import { sample } from 'lodash';
 import { motion } from 'motion/react';
+import { usePlausible } from 'next-plausible';
 import Link from 'next/link';
 import { memo, useState } from 'react';
 
@@ -198,6 +199,7 @@ const ActivityTables = memo(function ActivityTables() {
           }))}
           delayFactor={0.1}
           noItemsMessage="None yet"
+          tableType="recent_posts"
         />
 
         <ActivityTable
@@ -227,6 +229,7 @@ const ActivityTables = memo(function ActivityTables() {
           }))}
           delayFactor={0.2}
           noItemsMessage="No spotlights currently"
+          tableType="spotlight"
         />
 
         <ActivityTable
@@ -260,6 +263,7 @@ const ActivityTables = memo(function ActivityTables() {
           )}
           delayFactor={0.3}
           noItemsMessage="None yet"
+          tableType="victories"
         />
       </motion.div>
     </>
@@ -268,7 +272,7 @@ const ActivityTables = memo(function ActivityTables() {
 
 type TActivityItem = {
   id: number;
-} & TActivityItemProps;
+} & Omit<TActivityItemProps, 'tableType' | 'position'>;
 
 type TActivityTableProps = {
   title: string;
@@ -279,6 +283,7 @@ type TActivityTableProps = {
   className?: string;
   gridClassName?: string;
   noItemsMessage: string;
+  tableType: string;
 };
 
 function ActivityTable({
@@ -289,7 +294,8 @@ function ActivityTable({
   delayFactor = 0.1,
   className = '',
   gridClassName = 'space-y-4',
-  noItemsMessage
+  noItemsMessage,
+  tableType
 }: TActivityTableProps) {
   return (
     <motion.div
@@ -317,8 +323,13 @@ function ActivityTable({
           </p>
         ) : (
           <div className={gridClassName}>
-            {items.map((item) => (
-              <ActivityItem key={item.id} {...item} />
+            {items.map((item, index) => (
+              <ActivityItem
+                key={item.id}
+                {...item}
+                tableType={tableType}
+                position={index + 1}
+              />
             ))}
           </div>
         )}
@@ -356,6 +367,8 @@ type TActivityItemProps = {
   titleColor: keyof typeof TITLE_COLOR_CLASSES;
   bolded?: boolean;
   clamped?: boolean;
+  tableType: string;
+  position: number;
 };
 
 const ActivityItem = memo(function ActivityItem(props: TActivityItemProps) {
@@ -366,6 +379,13 @@ const ActivityItem = memo(function ActivityItem(props: TActivityItemProps) {
     TITLE_COLOR_CLASSES[props.titleColor]
   );
 
+  const trackActivityItemOnClick = useTrackActivityItemOnClick({
+    tableType: props.tableType,
+    hostname: props.websiteHostname,
+    position: props.position,
+    createdAt: props.createdAt
+  });
+
   return (
     <Link
       href={`/${props.websiteHostname}`}
@@ -373,6 +393,7 @@ const ActivityItem = memo(function ActivityItem(props: TActivityItemProps) {
         'group block border-l-2 pl-3',
         BAR_COLOR_CLASSES[props.barColor]
       )}
+      onClick={trackActivityItemOnClick}
     >
       <p className={titleClasses}>{props.title}</p>
 
@@ -410,6 +431,46 @@ function formatTimeAgo(dateString: string): string {
     const months = Math.floor(diffInDays / 30);
     return `${months}m ago`;
   }
+}
+
+function getAgeCategory(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 60) {
+    return 'minutes';
+  } else if (diffInHours < 24) {
+    return 'hours';
+  } else if (diffInDays < 7) {
+    return 'days';
+  } else {
+    return 'weeks';
+  }
+}
+
+function useTrackActivityItemOnClick(input: {
+  tableType: string;
+  hostname: string;
+  position: number;
+  createdAt: string;
+}) {
+  const plausible = usePlausible();
+
+  return function trackActivityItemOnClick() {
+    const ageCategory = getAgeCategory(input.createdAt);
+    plausible('activity_item_clicked', {
+      props: {
+        table_type: input.tableType,
+        hostname: input.hostname,
+        position: input.position,
+        age_category: ageCategory
+      }
+    });
+  };
 }
 
 export default ActivityTables;
