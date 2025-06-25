@@ -3,9 +3,10 @@ import CompanyArticleLayout from './CompanyArticleLayout';
 
 interface WixArticleProps {
   isProbablyMasjid?: boolean;
+  hostname?: string;
 }
 
-const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
+const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid, hostname }) => {
   return (
     <CompanyArticleLayout
       companyName="Wix"
@@ -24,6 +25,7 @@ const WixArticle: React.FC<WixArticleProps> = ({ isProbablyMasjid }) => {
         'Platform dependency: Impossible to export your content or migrate to another platform'
       ]}
       isProbablyMasjid={isProbablyMasjid}
+      hostname={hostname}
       masjidSection={{
         subtitle:
           "The Masjid App: Optimized for Masjid's with Attention to the Ummah's Dignity Unlike Wix",

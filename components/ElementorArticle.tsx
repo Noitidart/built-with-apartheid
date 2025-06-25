@@ -4,10 +4,12 @@ import CompanyArticleLayout from './CompanyArticleLayout';
 
 interface ElementorArticleProps {
   isProbablyMasjid?: boolean;
+  hostname?: string;
 }
 
 const ElementorArticle: React.FC<ElementorArticleProps> = ({
-  isProbablyMasjid
+  isProbablyMasjid,
+  hostname
 }) => {
   const [showTweetModal, setShowTweetModal] = useState(false);
   const [showTwitterWarning, setShowTwitterWarning] = useState(false);
@@ -170,6 +172,7 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
         'Hidden surveillance: Uses local storage and session storage to track user behavior across sessions for data collection'
       ]}
       isProbablyMasjid={isProbablyMasjid}
+      hostname={hostname}
       masjidSection={{
         subtitle:
           'The Masjid App: Beyond Elementor - A Complete Islamic Tech Stack',

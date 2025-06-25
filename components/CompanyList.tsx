@@ -137,7 +137,7 @@ export default function CompanyList({
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                   className="overflow-hidden"
                 >
-                  <Article isProbablyMasjid={isProbablyMasjid} />
+                  <Article isProbablyMasjid={isProbablyMasjid} hostname={hostname} />
                 </motion.div>
               )}
             </AnimatePresence>
