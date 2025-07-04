@@ -1,6 +1,7 @@
 import ActivityTables from '@/components/ActivityTables';
 import Button from '@/components/Button';
 import CompanyList from '@/components/CompanyList';
+import ScanInfoMessage from '@/components/ScanInfoMessage';
 import Spinner from '@/components/Spinner';
 import Timeline from '@/components/Timeline';
 import WatchButton from '@/components/WatchButton';
@@ -24,8 +25,8 @@ import classnames from 'classnames';
 import delay from 'delay';
 import { get } from 'lodash';
 import { AnimatePresence, motion } from 'motion/react';
-import Link from 'next/link';
 import { usePlausible } from 'next-plausible';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -45,7 +46,9 @@ function UrlPage() {
         : undefined;
 
   const shouldScanBypassCache = useRef(false);
-  const scanSourceRef = useRef<'search_form' | 'url_navigation' | 'fresh_scan_button'>('url_navigation');
+  const scanSourceRef = useRef<
+    'search_form' | 'url_navigation' | 'fresh_scan_button'
+  >('url_navigation');
   const scanStartTimeRef = useRef<number>(0);
   const trackScanInitiated = useTrackScanInitiated({
     source: scanSourceRef.current,
@@ -138,7 +141,12 @@ function UrlPage() {
         trackScanCompleted();
       }
     },
-    [scanQuery.isSuccess, scanQuery.data, scanQuery.isFetching, trackScanCompleted]
+    [
+      scanQuery.isSuccess,
+      scanQuery.data,
+      scanQuery.isFetching,
+      trackScanCompleted
+    ]
   );
 
   // Track scan errors
@@ -153,7 +161,12 @@ function UrlPage() {
         trackScanError();
       }
     },
-    [scanQuery.isError, scanQuery.isFetching, scanQuery.errorUpdateCount, trackScanError]
+    [
+      scanQuery.isError,
+      scanQuery.isFetching,
+      scanQuery.errorUpdateCount,
+      trackScanError
+    ]
   );
 
   useEffect(
@@ -192,7 +205,7 @@ function UrlPage() {
       .toLowerCase();
 
     if (url && urlValueWithoutProtocol === url) {
-      // So it resets the error count. As opposted to scanQuery.refetch
+      // So it resets the error count. As apposed to scanQuery.refetch
       queryClient.resetQueries({ queryKey: ['scan', url] });
       return;
     }
@@ -353,23 +366,20 @@ function UrlPage() {
           )}
 
           {/* Watch Button - Show when we have scan results */}
-          {scanQuery.isSuccess &&
-            scanQuery.data &&
-            !scanQuery.isFetching &&
-            scanQuery.data.me && (
-              <motion.div
-                key="watch-button"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <WatchButton
-                  me={scanQuery.data.me}
-                  website={scanQuery.data.website}
-                />
-              </motion.div>
-            )}
+          {scanQuery.isSuccess && scanQuery.data && !scanQuery.isFetching && (
+            <motion.div
+              key="watch-button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <WatchButton
+                me={scanQuery.data.me}
+                website={scanQuery.data.website}
+              />
+            </motion.div>
+          )}
 
           {scanQuery.isSuccess &&
             scanQuery.data &&
@@ -391,6 +401,14 @@ function UrlPage() {
                 transition={{ duration: 0.5 }}
               >
                 <ScanResults data={scanQuery.data} onForceScan={forceScan} />
+                <ScanInfoMessage
+                  hostname={scanQuery.data.website.hostname}
+                  detectedCompanies={getDetectedCompanies(
+                    scanQuery.data.scanInteraction.scan.changes
+                  )}
+                  websiteId={scanQuery.data.website.id}
+                  scanId={scanQuery.data.scanInteraction.scan.id}
+                />
               </motion.div>
             )}
 
@@ -771,12 +789,12 @@ function ScanQueryErrorDisplay(props: TScanQueryErrorDisplayProps) {
             return;
           }
 
-          const millisUntilNextWholeSecond = 1000 - (now % 1000);
+          const milliSecUntilNextWholeSecond = 1000 - (now % 1000);
 
           timeoutId = window.setTimeout(function rerenderCountdowns() {
             forceRender();
             maybeSetupCountdownRerenders();
-          }, millisUntilNextWholeSecond);
+          }, milliSecUntilNextWholeSecond);
         };
 
       rerenderCountdownsNextWholeSecond();
@@ -864,12 +882,15 @@ function ScanResults({ data, onForceScan }: ScanResultsProps) {
     data.scanInteraction.scan.changes
   );
   const hasDetectedCompanies = detectedCompanies.length > 0;
-  
+
   const trackFreshScanBlocked = useTrackFreshScanBlocked();
-  
+
   useEffect(
     function trackBlockedFreshScan() {
-      if (data.isCached && hasFormError('scanErrors.freshScanDeniedAsLastScanIsTooRecent', data)) {
+      if (
+        data.isCached &&
+        hasFormError('scanErrors.freshScanDeniedAsLastScanIsTooRecent', data)
+      ) {
         trackFreshScanBlocked();
       }
     },
@@ -978,7 +999,7 @@ function useTrackScanInitiated(input: {
   hostname: string;
 }) {
   const plausible = usePlausible();
-  
+
   return function trackScanInitiated() {
     plausible('scan_initiated', {
       props: {
@@ -996,15 +1017,15 @@ function useTrackScanCompleted(input: {
   data: TScanResponseData | undefined;
 }) {
   const plausible = usePlausible();
-  
+
   return function trackScanCompleted() {
     if (!input.data || !('website' in input.data)) return;
-    
+
     const duration = Math.round((Date.now() - input.startTime) / 1000);
     const infectionCount = getDetectedCompanies(
       input.data.scanInteraction.scan.changes
     ).length;
-    
+
     plausible('scan_completed', {
       props: {
         duration_seconds: duration,
@@ -1017,15 +1038,12 @@ function useTrackScanCompleted(input: {
   };
 }
 
-function useTrackScanError(input: {
-  error: unknown;
-  attemptNumber: number;
-}) {
+function useTrackScanError(input: { error: unknown; attemptNumber: number }) {
   const plausible = usePlausible();
-  
+
   return function trackScanError() {
     const errorInfo = getScanErrorInfo(input.error);
-    
+
     plausible('scan_error', {
       props: {
         error_type: errorInfo.errorKey,
@@ -1037,7 +1055,7 @@ function useTrackScanError(input: {
 
 function useTrackFreshScanBlocked() {
   const plausible = usePlausible();
-  
+
   return function trackFreshScanBlocked() {
     plausible('fresh_scan_blocked', {
       props: {
@@ -1051,21 +1069,18 @@ function getScanErrorInfo(error: unknown): { errorKey: string } {
   if (!axios.isAxiosError(error)) {
     return { errorKey: 'unknown_error' };
   }
-  
+
   const firstFormError = get(error, 'response.data._errors.formErrors[0]');
   let errorKey: string;
-  
-  if (
-    Array.isArray(firstFormError) &&
-    typeof firstFormError[0] === 'string'
-  ) {
+
+  if (Array.isArray(firstFormError) && typeof firstFormError[0] === 'string') {
     errorKey = firstFormError[0];
   } else if (typeof firstFormError === 'string') {
     errorKey = firstFormError;
   } else {
     errorKey = 'unknown_error';
   }
-  
+
   return { errorKey };
 }
 

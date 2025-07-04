@@ -63,6 +63,7 @@ model Website {
   milestones   Milestone[]
   // (Many-to-many-optional) One website can be watched by zero or many users WHILE one user can watch zero or many websites
   watchers     User[]        @relation("WatchedWebsites")
+  reports  Report[]
 }
 
 model Ip {
@@ -115,6 +116,9 @@ model Scan {
   // (One-to-one) One scan belongs to exactly one interaction WHILE an interaction can have zero or one scan
   interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
   interactionId Int         @unique
+
+  // many to one
+  reports Report[]
 }
 
 model Interaction {
@@ -158,6 +162,9 @@ model Interaction {
   targetUsers User[] @relation("InteractionTargetUsers")
   // (Many-to-many) One interaction can target many IPs WHILE one IP can be target of many interactions
   targetIps   Ip[]   @relation("InteractionTargetIps")
+
+  // (One-to-one) One interaction can have zero or one report WHILE a report belongs to exactly one interaction
+  report Report?
 }
 
 enum InteractionType {
@@ -172,6 +179,7 @@ enum InteractionType {
   UNBANNED_IPS
   WATCHED
   UNWATCHED
+  REPORT
 }
 
 model Post {
@@ -214,4 +222,17 @@ model Milestone {
   // (One-to-many-required) One milestone data belongs to exactly one interaction WHILE an interaction can have zero or many milestone data
   dataInteraction   Interaction @relation("MilestoneDataInteraction", fields: [dataInteractionId], references: [id], onDelete: Cascade)
   dataInteractionId Int
+}
+
+model Report {
+  id            Int         @id @default(autoincrement())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
+  message       String
+  scan          Scan?       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  scanId        Int?
+  website       Website     @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  websiteId     Int
+  interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interactionId Int         @unique
 }

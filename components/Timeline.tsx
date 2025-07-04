@@ -9,6 +9,7 @@ import type {
 import type {
   TTimelineCompany,
   TTimelinePostInteractionWithNumber,
+  TTimelineReportInteraction,
   TTimelineResponseData,
   TTimelineScanInteractionWithNumber
 } from '@/pages/api/v1/[websiteId]/timeline';
@@ -905,6 +906,36 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
         default:
           assertNever(interaction.milestone.data);
       }
+    }
+
+    case 'REPORT': {
+      const reportInteraction = interaction as TTimelineReportInteraction;
+
+      return (
+        <InteractionLayout
+          title={`Reported By: Concerned User #${reportInteraction.report.userNumber}`}
+          body={interaction.report?.message || 'No content'}
+          avatar={{
+            className: 'bg-yellow-500 text-white',
+            content: (
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )
+          }}
+          interaction={interaction}
+        />
+      );
     }
 
     default:

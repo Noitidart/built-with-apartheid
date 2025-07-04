@@ -26,6 +26,7 @@ const SCAN_INTERACTION_SELECT = {
   websiteId: true,
   scan: {
     select: {
+      id: true,
       changes: true
     }
   }
