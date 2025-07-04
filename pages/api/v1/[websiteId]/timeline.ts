@@ -83,10 +83,23 @@ export type TTimelineMilestoneInteraction = TTimelineInteractionBase & {
   };
 };
 
+// Add this type for report timeline items
+export type TTimelineReportInteraction = TTimelineInteractionBase & {
+  type: 'REPORT';
+  report: {
+    id: number;
+    websiteId: number;
+    scanId: number | null;
+    message: string;
+    userNumber: number;
+  };
+};
+
 export type TTimelineInteractionWithNumbers =
   | TTimelineScanInteractionWithNumber
   | TTimelinePostInteractionWithNumber
-  | TTimelineMilestoneInteraction;
+  | TTimelineMilestoneInteraction
+  | TTimelineReportInteraction;
 
 export type TTimelineResponseData = {
   /** "Timeline Interactions" - A timeline is defined as a list of interaction for a given website. This currently holds all the interactions, there is no pagination. */
@@ -160,6 +173,14 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
             select: {
               id: true,
               changes: true
+            }
+          },
+          report: {
+            select: {
+              id: true,
+              message: true,
+              scanId: true,
+              websiteId: true
             }
           },
           post: {
@@ -349,6 +370,39 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
             post: {
               body: interaction.post.body,
               number: postNumber,
+              userNumber
+            }
+          };
+        }
+
+        case 'REPORT': {
+          if (!interaction.report) {
+            throw new Error(
+              `Report interaction ${interaction.id} missing report data`
+            );
+          }
+          if (!interaction.userId) {
+            throw new Error(
+              `Report interaction ${interaction.id} missing userId`
+            );
+          }
+          const userNumber = userNumberMap.get(interaction.userId);
+          if (!userNumber) {
+            throw new Error(
+              `User number not found for userId ${interaction.userId}`
+            );
+          }
+
+          return {
+            id: interaction.id,
+            type: interaction.type,
+            createdAt: interaction.createdAt,
+            websiteId: interaction.websiteId ?? interaction.report.websiteId,
+            report: {
+              message: interaction.report.message,
+              id: interaction.report.id,
+              scanId: interaction.report.scanId,
+              websiteId: interaction.report.websiteId,
               userNumber
             }
           };
