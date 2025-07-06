@@ -11,16 +11,6 @@ function formatCompanyList(companies: typeof COMPANIES) {
   return names.slice(0, -1).join(', ') + ', and ' + names[names.length - 1];
 }
 
-// Helper to get scan status text
-function getScanStatusText({
-  detectedCompanies
-}: {
-  detectedCompanies: string[];
-}) {
-  if (detectedCompanies.length === 0) return 'No Israeli tech detected';
-  return `Detected: ${detectedCompanies.join(', ')}`;
-}
-
 export default function ScanInfoMessage({
   hostname,
   detectedCompanies,
@@ -37,6 +27,7 @@ export default function ScanInfoMessage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const [reportType, setReportType] = useState('scan-wrong');
 
   // For accessibility
   if (typeof document !== 'undefined') {
@@ -49,13 +40,14 @@ export default function ScanInfoMessage({
     try {
       await axios.post(`/api/v1/${websiteId}/report`, {
         message,
-        scanId
+        scanId,
+        reportType
       });
       setIsModalOpen(false);
       setMessage('');
       // Refetch timeline to show the new report
       queryClient.invalidateQueries({ queryKey: ['timeline', websiteId] });
-      alert('Thank you for your report!');
+      // alert('Thank you for your report!');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(
@@ -73,12 +65,10 @@ export default function ScanInfoMessage({
         <strong>Note:</strong> We only scan for {formatCompanyList(COMPANIES)}.
         We&apos;ll be adding support for more sites in the future.
       </p>
-      <div className="mt-2 flex items-center justify-start gap-2">
+      <div className="mt-2 flex items-center justify-start ">
         <span>Think this is a mistake?</span>
         <button
-          //   className="text-yellow-700 bg-gray-50 underline font-medium hover:text-yellow-900 focus:outline-none"
-          // bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600
-          className="bg-yellow-50 dark:bg-yellow-900/80 border border-yellow-200 dark:border-yellow-800 underline  text-yellow-700 dark:text-yellow-400 sm:text-small px-1 py-1 sm:px-2 sm:py-1 rounded-lg text-xs flex items-center gap-2 transition-colors duration-200  shadow-sm"
+          className="bg-yellow-50 dark:bg-yellow-900/80  border-yellow-200 dark:border-yellow-800 underline  text-yellow-700 dark:text-yellow-400 sm:text-small px-1 py-1 sm:px-2  rounded-lg text-sm flex items-center gap-1 transition-colors duration-200  shadow-sm"
           onClick={() => setIsModalOpen(true)}
         >
           Report
@@ -101,9 +91,42 @@ export default function ScanInfoMessage({
             </div>
             <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">
               Status:{' '}
-              <span className="font-medium">
-                {getScanStatusText({ detectedCompanies })}
-              </span>
+              {detectedCompanies.length === 0 ? (
+                <span className="font-medium text-green-600 dark:text-green-400">
+                  clean
+                </span>
+              ) : (
+                <span className="font-medium text-red-600 dark:text-red-400">
+                  Infected with {detectedCompanies.join(', ')}
+                </span>
+              )}
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Report type:
+              </label>
+              <div className="flex flex-col gap-1">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="reportType"
+                    value="scan-wrong"
+                    checked={reportType === 'scan-wrong'}
+                    onChange={() => setReportType('scan-wrong')}
+                  />
+                  Scan is wrong (false positive/negative)
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="reportType"
+                    value="scan-right-other-vuln"
+                    checked={reportType === 'scan-right-other-vuln'}
+                    onChange={() => setReportType('scan-right-other-vuln')}
+                  />
+                  Scan is correct, but website has other known vulnerabilities
+                </label>
+              </div>
             </div>
           </div>
           <textarea

@@ -92,6 +92,7 @@ export type TTimelineReportInteraction = TTimelineInteractionBase & {
     scanId: number | null;
     message: string;
     userNumber: number;
+    reportType: string;
   };
 };
 
@@ -180,7 +181,8 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
               id: true,
               message: true,
               scanId: true,
-              websiteId: true
+              websiteId: true,
+              reportType: true
             }
           },
           post: {
@@ -403,7 +405,8 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
               id: interaction.report.id,
               scanId: interaction.report.scanId,
               websiteId: interaction.report.websiteId,
-              userNumber
+              userNumber,
+              reportType: interaction.report.reportType
             }
           };
         }

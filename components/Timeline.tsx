@@ -911,6 +911,17 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
     case 'REPORT': {
       const reportInteraction = interaction as TTimelineReportInteraction;
 
+      // Map reportType to a human-friendly label
+      const reportTypeLabels: Record<string, string> = {
+        'scan-wrong': 'Scan is wrong (false positive/negative)',
+        'scan-right-other-vuln':
+          'Scan is correct, but website has other known vulnerabilities',
+        'scan-right': 'Scan is correct'
+      };
+      const subtitle =
+        reportTypeLabels[reportInteraction.report.reportType] ||
+        reportInteraction.report.reportType;
+
       return (
         <InteractionLayout
           title={`Reported By: Concerned User #${reportInteraction.report.userNumber}`}
@@ -934,6 +945,7 @@ function Interaction({ interaction, timelineData }: InteractionProps) {
             )
           }}
           interaction={interaction}
+          subtitle={subtitle}
         />
       );
     }
