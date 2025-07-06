@@ -14,12 +14,14 @@ const bodySchema = z.object({
     .string()
     .min(1, 'Message is required')
     .max(1000, 'Message too long'),
-  scanId: z.number().optional()
+  scanId: z.number().optional(),
+  reportType: z.string().min(1, 'Report type is required')
 });
 
 export type TReportRequestBody = {
   message: string;
   scanId?: number;
+  reportType: string;
 };
 
 import type { TMe } from '@/types/user';
@@ -88,7 +90,7 @@ const newReportHandler = withPrisma(async function newReportHandler(
     });
   }
 
-  const { message, scanId } = bodyResult.data;
+  const { message, scanId, reportType } = bodyResult.data;
 
   // Verify website exists
   const website = await prisma.website.findUnique({
@@ -132,7 +134,8 @@ const newReportHandler = withPrisma(async function newReportHandler(
         create: {
           message: message.trim(),
           websiteId,
-          scanId: scanId || null
+          scanId: scanId || null,
+          reportType
         }
       }
     },

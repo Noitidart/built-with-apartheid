@@ -235,4 +235,5 @@ model Report {
   websiteId     Int
   interaction   Interaction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
   interactionId Int         @unique
+  reportType    String      @default("scan-wrong") // scan-right, scan-wrong, scan-right-other-vuln
 }
