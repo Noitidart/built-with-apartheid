@@ -270,7 +270,7 @@ const ActiveCompanyList = memo(function ActiveCompanyList({
 
               <div className="text-center bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-2 rounded-lg sm:flex-shrink-0">
                 <div className="text-2xl font-bold">
-                  {daysSinceFirst === 0 ? 'Today' : `Day ${daysSinceFirst + 1}`}
+                  {daysSinceFirst === 0 ? 'Today' : `Day ${new Intl.NumberFormat().format(daysSinceFirst + 1)}`}
                 </div>
                 <div className="text-sm">
                   {daysSinceFirst === 0 ? 'detected' : 'using Israeli tech'}
