@@ -180,6 +180,7 @@ enum InteractionType {
   WATCHED
   UNWATCHED
   REPORT
+  VIEW
 }
 
 model Post {

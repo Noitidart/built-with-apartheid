@@ -1,5 +1,6 @@
 import { COMPANIES, type CompanyId } from '@/constants/companies';
 import { getMeFromRefreshedToken } from '@/lib/auth.backend';
+import { getOrCreateIp } from '@/lib/ip-utils.backend';
 import { withPrisma } from '@/lib/prisma';
 import { assertNever } from '@/lib/typescript';
 import type { TInteraction } from '@/types/interaction';
@@ -8,6 +9,7 @@ import type { TScan } from '@/types/scan';
 import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
 import type { PrismaClient } from '@prisma/client';
+import { InteractionType } from '@prisma/client';
 import delay from 'delay';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -147,6 +149,18 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
     response: res
   });
   const userId = me.id;
+
+  // to create the view interaction when getting the timeline
+  const userIp = await getOrCreateIp(prisma, req, userId);
+  await prisma.interaction.create({
+    data: {
+      type: 'VIEW' as InteractionType,
+      websiteId,
+      userId,
+      ipId: userIp.id,
+      data: null
+    }
+  });
 
   // Run all queries in parallel using Promise.all
   const [interactions, userNumbers, scanNumbers, postNumbers, totalPosters] =
@@ -464,6 +478,7 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
         case 'BANNED_IPS':
         case 'UNBANNED_IPS':
         case 'WATCHED':
+        case 'VIEW':
         case 'UNWATCHED': {
           throw new Error(
             `Interaction type ${interaction.type} is not supported`
