@@ -12,6 +12,7 @@ import { assertIsScanInteraction } from '@/types/interaction';
 import type { TScan } from '@/types/scan';
 import type { TMe } from '@/types/user';
 import type { TWebsite } from '@/types/website';
+import { emailNowCleanToWatchers } from '@/utils/email-watchers/emailNowCleanToWatchers';
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
@@ -329,6 +330,23 @@ const newScanHandler = withPrisma(async function newScanHandler(
   assertIsScanInteraction(scanInteraction);
   if (precedingScanInteraction) {
     assertIsScanInteraction(precedingScanInteraction);
+  }
+
+  const prevHadInfection = precedingScanInteraction
+    ? Object.values(precedingScanInteraction.scan.changes).some(
+        (status) => status === 'new' || status === 'still-present'
+      )
+    : false;
+  const nowIsClean = Object.keys(scanInteraction.scan.changes).length === 0;
+
+  if (prevHadInfection && nowIsClean) {
+    // upon an infected -> clean transition send the email to site watchers
+    emailNowCleanToWatchers({
+      prisma,
+      websiteId: website.id
+    }).catch((err) => {
+      console.error('Failed to send clean site email to watchers:', err);
+    });
   }
 
   await Promise.all([
