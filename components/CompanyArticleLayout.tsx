@@ -64,7 +64,7 @@ const CompanyArticleLayout = function CompanyArticleLayout(
 
       {/* Masjid-specific section */}
       {isProbablyMasjid && (
-        <div className="p-3 sm:p-6 bg-green-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
+        <div className="p-3 sm:p-6 bg-purple-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
           <h3 className="text-lg font-bold mb-2 sm:mb-3 text-green-800 dark:text-green-200">
             Special Recommendation for Masjid&apos;s
           </h3>
@@ -118,6 +118,140 @@ const CompanyArticleLayout = function CompanyArticleLayout(
           </div>
         </div>
       )}
+
+      {
+        <div className="p-3 sm:p-6 bg-purple-200 dark:bg-purple-900 border-t border-purple-100 dark:border-purple-800">
+          <h3 className="text-lg font-bold mb-2 sm:mb-3 text-purple-800 dark:text-purple-200">
+            Boon Digital Solutions: Professional WordPress Migration & Hosting
+          </h3>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm">
+            <h4 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">
+              Boon Digital Solutions provides professional website migration to
+              get your content onto WordPress platform quickly and efficiently.
+              Our migration process ensures reliable results, with custom
+              integration options available for organizations needing fully
+              integrated web presence solutions.
+            </h4>
+
+            <p className="text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
+              {masjidSection.description}
+            </p>
+
+            <ul className="list-disc pl-4 sm:pl-5 space-y-1 sm:space-y-2 mb-3 sm:mb-4 text-gray-700 dark:text-gray-300">
+              {/* {masjidSection.benefits.map((benefit, index) => (
+                <li key={index}>{benefit}</li>
+              ))} */}
+              <li>
+                WordPress setup - clean, professional foundation tailored to
+                your brand
+              </li>
+              <li>
+                Content page migration - transfer of up to 5 pages included
+              </li>
+              <li>
+                Domain name transfer guidance - for names currently registered
+                through Wix
+              </li>
+              <li>
+                Hosting setup with 2-months free - get set up with WordPress.com
+                and experience live backups, enhanced security, and site
+                analytics
+              </li>
+              <li>
+                Flexibility - have true ownership of your site. You're never
+                locked in with us
+              </li>
+              <li>
+                Quality assurance testing - ensure all content displays
+                correctly after migration
+              </li>
+            </ul>
+
+            <div className="bg-purple-200 dark:bg-purple-900 p-3 sm:p-4 rounded-lg mb-3 sm:mb-4">
+              <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">
+                Custom Integration Available
+              </h5>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                For organizations needing fully integrated web presence:
+                <li>
+                  Advanced Functionality - specialized features beyond basic
+                  content pages
+                </li>
+                <li>
+                  Complete Digital Strategy - comprehensive web presence
+                  planning
+                </li>
+                <li>
+                  Custom Development - unique features built specifically for
+                  your needs
+                </li>
+                {/* {masjidSection.features.map((feature) => (
+                  <li key={feature} className="flex items-center text-sm">
+                    <svg
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400 mr-1 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {feature}
+                  </li>
+                ))} */}
+              </ul>
+            </div>
+
+            <div className="bg-purple-200 dark:bg-purple-900 p-3 sm:p-4 rounded-lg mb-3 sm:mb-4">
+              <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">
+                Ongoing Support & Maintenance Built specifically for growing
+                organizations:
+              </h5>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                For organizations needing fully integrated web presence:
+                <li>
+                  WordPress Training Included - Learn to manage your site
+                  confidently
+                </li>
+                <li>
+                  Monthly Maintenance Packages - Starting at $100/month for
+                  hosted sites
+                </li>
+                <li>
+                  Regular Security Updates - Keep your site protected and
+                  up-to-date
+                </li>
+                <li>
+                  Performance Monitoring - Ensure optimal site speed and
+                  functionality
+                </li>
+                <li>
+                  Content Support - Assistance with updates and new content
+                  creation
+                </li>
+                <li>
+                  Technical Support - Direct access to our team for any issues
+                </li>
+              </ul>
+            </div>
+
+            <p className="text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
+              {/* {masjidSection.conclusion} */}
+              Unlike Israeli tech that enables genocide and endangers your data,
+              Boon digital solutions can be trusted to have your back.
+            </p>
+            <button className="inline-flex items-center justify-center w-full px-5 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors">
+              Learn How Boon Digital Solutions can help you{' '}
+            </button>
+            {/* <LearnTmaButton hostname={hostname} /> */}
+          </div>
+        </div>
+      }
     </div>
   );
 };
