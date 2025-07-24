@@ -211,6 +211,26 @@ const ElementorArticle: React.FC<ElementorArticleProps> = ({
         conclusion:
           'Unlike Elementor that creates security risks and requires constant maintenance, The Masjid App provides a complete, secure, and automated solution. Your team can focus on serving the community while we handle all technical aspects - from hosting to security to Islamic-specific functionality.'
       }}
+      // boolDigitalSolutionsSection: {{}} ={{
+      //   benefits: [
+      //     "Complete privacy protection - zero data collection vs Elementor's surveillance operation",
+      //     'Enterprise-grade security built-in - no plugins needed, no vulnerabilities to exploit',
+      //     'Modern WordPress with Gutenberg - faster and more reliable than outdated Elementor',
+      //     'Clean architecture - never embeds into your database like Elementor does',
+      //     'Automatic updates across entire stack - no technical maintenance required',
+      //     'Purpose-built Islamic features - hijri calendar, prayer times, and more'
+      //   ],
+      //   features: [
+      //     'Hijri Calendar Integration',
+      //     'Prayer Times Automation',
+      //     'Event Management System',
+      //     'Donation Processing',
+      //     'Community Directory',
+      //     'Khutbah Archives',
+      //     'Islamic Content Library',
+      //     'Multi-language Support'
+      //   ],
+      // }}
     />
   );
 };
