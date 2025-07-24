@@ -170,7 +170,7 @@ const getTimelineHandler = withPrisma(async function getTimelineHandler(
         where: {
           websiteId,
           type: {
-            notIn: ['WATCHED', 'UNWATCHED']
+            notIn: ['WATCHED', 'UNWATCHED', 'VIEW']
           },
           // Exclude interactions from banned users. The userId: null is
           // required otherwise if specifically look for user.isBanned false
