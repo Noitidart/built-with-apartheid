@@ -69,7 +69,7 @@ const CompanyArticleLayout = function CompanyArticleLayout(
 
       {/* Masjid-specific section */}
       {isProbablyMasjid && (
-        <div className="p-3 sm:p-6 bg-purple-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
+        <div className="p-3 sm:p-6 bg-green-200 dark:bg-green-900 border-t border-green-100 dark:border-green-800">
           <h3 className="text-lg font-bold mb-2 sm:mb-3 text-green-800 dark:text-green-200">
             Special Recommendation for Masjid&apos;s
           </h3>
