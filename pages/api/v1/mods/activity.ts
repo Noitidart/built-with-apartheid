@@ -1,8 +1,8 @@
 import { requireMod } from '@/lib/auth.middleware';
 import { withPrisma } from '@/lib/prisma';
-import type { PrismaClient, InteractionType } from '@prisma/client';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { InteractionType, PrismaClient } from '@prisma/client';
 import { sub } from 'date-fns';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 type TSuspiciousActivity = {
   id: number;
@@ -108,12 +108,16 @@ const getActivityMonitorHandler = withPrisma(
     const whereClause: {
       createdAt: { gte: Date };
       type?: InteractionType;
+      NOT?: { type: InteractionType };
     } = {
       createdAt: { gte: startDate }
     };
 
     if (interactionType !== 'all') {
       whereClause.type = interactionType as InteractionType;
+    } else {
+      // Exclude VIEW activities from 'all' queries
+      whereClause.NOT = { type: 'VIEW' as InteractionType };
     }
 
     // Fetch interactions with all related data
@@ -182,7 +186,7 @@ const getActivityMonitorHandler = withPrisma(
     // Calculate stats
     const uniqueUserIds = new Set<string>();
     const uniqueIpIds = new Set<number>();
-    
+
     interactions.forEach((interaction) => {
       if (interaction.user) {
         uniqueUserIds.add(interaction.user.id);
@@ -198,9 +202,11 @@ const getActivityMonitorHandler = withPrisma(
     // Check for rapid posting (more than 5 posts in 5 minutes from same user)
     const userPostCounts = new Map<string, number>();
     const recentPostTime = sub(new Date(), { minutes: 5 });
-    
+
     interactions
-      .filter((i) => i.type === 'POST' && i.createdAt >= recentPostTime && i.user)
+      .filter(
+        (i) => i.type === 'POST' && i.createdAt >= recentPostTime && i.user
+      )
       .forEach((interaction) => {
         const userId = interaction.user!.id;
         userPostCounts.set(userId, (userPostCounts.get(userId) || 0) + 1);
@@ -223,7 +229,7 @@ const getActivityMonitorHandler = withPrisma(
     // Check for rapid scanning (more than 10 scans in 1 minute from same IP)
     const ipScanCounts = new Map<string, number>();
     const recentScanTime = sub(new Date(), { minutes: 1 });
-    
+
     interactions
       .filter((i) => i.type === 'SCAN' && i.createdAt >= recentScanTime && i.ip)
       .forEach((interaction) => {
