@@ -5,10 +5,10 @@ import type { TGetInfectedSitesResponseData } from '@/pages/api/v1/mods/infected
 import type { TMe } from '@/types/user';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { AlertTriangle, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import React from 'react';
+import React, { useState } from 'react';
 
 export const getServerSideProps = getLoginLayoutServerSideProps;
 
@@ -36,12 +36,23 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
   const showMasjidsOnly = router.query.masjids === 'true';
   const sortBy = (router.query.sort as string) || 'activity-high';
   const timeRange = (router.query.range as string) || '24h';
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const infectedSitesQuery = useInfectedSitesQuery({
     showMasjidsOnly,
     sortBy,
     timeRange
   });
+
+  function toggleRowExpanded(siteId: number) {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(siteId)) {
+      newExpanded.delete(siteId);
+    } else {
+      newExpanded.add(siteId);
+    }
+    setExpandedRows(newExpanded);
+  }
 
   function updateUrlParams(updates: {
     masjids?: string;
@@ -107,10 +118,18 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-sm font-medium text-gray-500">
-              Infected Masjids
+              Anonymous Users
             </h3>
-            <p className="text-2xl font-bold text-red-600">
-              {infectedSitesQuery.data.stats.infectedMasjids}
+            <p className="text-2xl font-bold">
+              {infectedSitesQuery.data.stats.anonymousUsers}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="text-sm font-medium text-gray-500">
+              Known Users
+            </h3>
+            <p className="text-2xl font-bold text-green-600">
+              {infectedSitesQuery.data.stats.registeredUsers}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
@@ -119,14 +138,6 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
             </h3>
             <p className="text-2xl font-bold">
               {infectedSitesQuery.data.stats.recentActivity}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500">
-              Sites With Watchers
-            </h3>
-            <p className="text-2xl font-bold">
-              {infectedSitesQuery.data.stats.sitesWithWatchers}
             </p>
           </div>
         </div>
@@ -231,9 +242,6 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
                     Viewers
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trend
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Detected Companies
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -246,15 +254,28 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {infectedSitesQuery.data.infectedSites.map((site) => (
-                  <tr key={site.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/${site.hostname}`}
-                        className="text-sm font-medium text-blue-600 hover:underline"
-                      >
-                        {site.hostname}
-                      </Link>
-                    </td>
+                  <React.Fragment key={site.id}>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleRowExpanded(site.id)}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            {expandedRows.has(site.id) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
+                          <Link
+                            href={`/${site.hostname}`}
+                            className="text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            {site.hostname}
+                          </Link>
+                        </div>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {site.isMasjid ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -267,33 +288,56 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={site.recentActivity > 10 ? 'font-semibold text-red-600' : ''}>
-                        {site.recentActivity}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={site.recentActivity > 10 ? 'font-semibold text-red-600' : ''}>
+                          {site.recentActivity}
+                        </span>
+                        {site.activityTrend === 'increasing' && (
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                        )}
+                        {site.activityTrend === 'decreasing' && (
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={site.postsCount > 5 ? 'font-semibold text-green-600' : ''}>
-                        {site.postsCount}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={site.postsCount > 5 ? 'font-semibold text-green-600' : ''}>
+                          {site.postsCount}
+                        </span>
+                        {site.postsTrend === 'increasing' && (
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                        )}
+                        {site.postsTrend === 'decreasing' && (
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={site.totalViews > 100 ? 'font-semibold text-blue-600' : ''}>
-                        {site.totalViews}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={site.totalViews > 100 ? 'font-semibold text-blue-600' : ''}>
+                          {site.totalViews}
+                        </span>
+                        {site.viewsTrend === 'increasing' && (
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                        )}
+                        {site.viewsTrend === 'decreasing' && (
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={site.uniqueViews > 50 ? 'font-semibold text-purple-600' : ''}>
-                        {site.uniqueViews}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {site.activityTrend === 'increasing' ? (
-                        <TrendingUp className="w-5 h-5 text-green-500" />
-                      ) : site.activityTrend === 'decreasing' ? (
-                        <TrendingDown className="w-5 h-5 text-red-500" />
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <span className={site.uniqueViews > 50 ? 'font-semibold text-purple-600' : ''}>
+                          {site.uniqueViews}
+                        </span>
+                        {site.viewersTrend === 'increasing' && (
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                        )}
+                        {site.viewersTrend === 'decreasing' && (
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-2">
@@ -311,13 +355,66 @@ function InfectedSitesContent(_props: TInfectedSitesContentProps) {
                       {new Date(site.firstDetected).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {site.watcherCount > 0 ? (
-                        <span className="font-medium">{site.watcherCount}</span>
-                      ) : (
-                        <span className="text-gray-400">0</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {site.watcherCount > 0 ? (
+                          <span className="font-medium">{site.watcherCount}</span>
+                        ) : (
+                          <span className="text-gray-400">0</span>
+                        )}
+                        {site.watchersTrend === 'increasing' && (
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                        )}
+                        {site.watchersTrend === 'decreasing' && (
+                          <TrendingDown className="w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </td>
-                  </tr>
+                    </tr>
+                    {expandedRows.has(site.id) && (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="font-medium mb-2">Watchers ({site.watcherCount})</h4>
+                              {site.watcherEmails.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {site.watcherEmails.map((email) => (
+                                    <Link
+                                      key={email}
+                                      href={`/mods/users?search=${encodeURIComponent(email)}`}
+                                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                    >
+                                      {email}
+                                    </Link>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500">No watchers</p>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium mb-2">Active Known Users</h4>
+                              {site.activeUserEmails.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {site.activeUserEmails.map((email) => (
+                                    <Link
+                                      key={email}
+                                      href={`/mods/users?search=${encodeURIComponent(email)}`}
+                                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                                    >
+                                      {email}
+                                    </Link>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500">No known users have interacted with this site</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
