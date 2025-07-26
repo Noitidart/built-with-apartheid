@@ -195,8 +195,8 @@ const CompanyArticleLayout = function CompanyArticleLayout(
                     security, and site analytics
                   </li>
                   <li>
-                    Flexibility - have true ownership of your site. You're never
-                    locked in with us
+                    Flexibility - have true ownership of your site. You&apos;re
+                    never locked in with us
                   </li>
                   <li>
                     Quality assurance testing - ensure all content displays
