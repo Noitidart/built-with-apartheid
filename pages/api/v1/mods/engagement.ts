@@ -109,11 +109,13 @@ const getInfectedSitesHandler = withPrisma(
           }
         },
         interactions: {
-          where: activityStartDate ? {
-            createdAt: {
-              gte: activityStartDate
-            }
-          } : undefined,
+          where: activityStartDate
+            ? {
+                createdAt: {
+                  gte: activityStartDate
+                }
+              }
+            : undefined,
           select: {
             id: true,
             type: true,
@@ -127,65 +129,72 @@ const getInfectedSitesHandler = withPrisma(
     // Track global user stats
     const allUniqueUserIds = new Set<string>();
     const allRegisteredUserEmails = new Set<string>();
-    
+
     // Process websites to extract infected sites data
     const infectedSites: TInfectedSite[] = websitesWithScans
       .filter((website) => {
         // Filter sites that currently have detected companies
         const latestScan = website.scans[0];
         if (!latestScan) return false;
-        
+
         const currentlyDetected = Object.entries(latestScan.changes)
-          .filter(([_, status]) => status === 'new' || status === 'still-present')
+          .filter(
+            ([_, status]) => status === 'new' || status === 'still-present'
+          )
           .map(([companyId]) => companyId);
-        
+
         return currentlyDetected.length > 0;
       })
       .map((website) => {
         const latestScan = website.scans[0];
         const currentlyDetected = Object.entries(latestScan.changes)
-          .filter(([_, status]) => status === 'new' || status === 'still-present')
+          .filter(
+            ([_, status]) => status === 'new' || status === 'still-present'
+          )
           .map(([companyId]) => companyId);
 
         // Separate activity and views
-        const nonViewInteractions = website.interactions.filter(i => i.type !== 'VIEW');
-        const viewInteractions = website.interactions.filter(i => i.type === 'VIEW');
-        const postInteractions = website.interactions.filter(i => i.type === 'POST');
-        
+        const nonViewInteractions = website.interactions.filter(
+          (i) => i.type !== 'VIEW'
+        );
+        const viewInteractions = website.interactions.filter(
+          (i) => i.type === 'VIEW'
+        );
+        const postInteractions = website.interactions.filter(
+          (i) => i.type === 'POST'
+        );
+
         // Calculate activity based on selected time range (excluding views)
         const recentActivity = nonViewInteractions.length;
-        
+
         // Calculate posts count
         const postsCount = postInteractions.length;
-        
+
         // Calculate total views
         const totalViews = viewInteractions.length;
-        
+
         // Calculate unique views (unique users who viewed)
         const uniqueViewerIds = new Set(
-          viewInteractions
-            .filter(i => i.userId)
-            .map(i => i.userId)
+          viewInteractions.filter((i) => i.userId).map((i) => i.userId)
         );
         const uniqueViews = uniqueViewerIds.size;
-        
+
         // Collect all unique users who interacted with this site
         const siteUserIds = new Set<string>();
-        const siteUserEmails = new Set<string>();
-        
-        website.interactions.forEach(interaction => {
+
+        website.interactions.forEach((interaction) => {
           if (interaction.userId) {
             siteUserIds.add(interaction.userId);
             allUniqueUserIds.add(interaction.userId);
           }
         });
-        
+
         // Get watcher emails
         const watcherEmails = website.watchers
-          .filter(w => w.email)
-          .map(w => w.email as string);
-          
-        watcherEmails.forEach(email => allRegisteredUserEmails.add(email));
+          .filter((w) => w.email)
+          .map((w) => w.email as string);
+
+        watcherEmails.forEach((email) => allRegisteredUserEmails.add(email));
 
         // Calculate trends for all metrics
         let activityTrend: 'increasing' | 'decreasing' | 'stable' = 'stable';
@@ -193,75 +202,84 @@ const getInfectedSitesHandler = withPrisma(
         let viewsTrend: 'increasing' | 'decreasing' | 'stable' = 'stable';
         let viewersTrend: 'increasing' | 'decreasing' | 'stable' = 'stable';
         let watchersTrend: 'increasing' | 'decreasing' | 'stable' = 'stable';
-        
+
         if (timeRange !== 'all' && activityStartDate) {
           // Get midpoint of the time range for trend comparison
           const midpointDate = new Date(
             (activityStartDate.getTime() + new Date().getTime()) / 2
           );
-          
+
           // Activity trend
           const firstHalfActivity = nonViewInteractions.filter(
-            (i) => i.createdAt >= activityStartDate && i.createdAt < midpointDate
+            (i) =>
+              i.createdAt >= activityStartDate && i.createdAt < midpointDate
           ).length;
           const secondHalfActivity = nonViewInteractions.filter(
             (i) => i.createdAt >= midpointDate
           ).length;
-          
+
           if (secondHalfActivity > firstHalfActivity * 1.5) {
             activityTrend = 'increasing';
           } else if (secondHalfActivity < firstHalfActivity * 0.5) {
             activityTrend = 'decreasing';
           }
-          
+
           // Posts trend
           const firstHalfPosts = postInteractions.filter(
-            (i) => i.createdAt >= activityStartDate && i.createdAt < midpointDate
+            (i) =>
+              i.createdAt >= activityStartDate && i.createdAt < midpointDate
           ).length;
           const secondHalfPosts = postInteractions.filter(
             (i) => i.createdAt >= midpointDate
           ).length;
-          
+
           if (secondHalfPosts > firstHalfPosts * 1.5) {
             postsTrend = 'increasing';
           } else if (secondHalfPosts < firstHalfPosts * 0.5) {
             postsTrend = 'decreasing';
           }
-          
+
           // Views trend
           const firstHalfViews = viewInteractions.filter(
-            (i) => i.createdAt >= activityStartDate && i.createdAt < midpointDate
+            (i) =>
+              i.createdAt >= activityStartDate && i.createdAt < midpointDate
           ).length;
           const secondHalfViews = viewInteractions.filter(
             (i) => i.createdAt >= midpointDate
           ).length;
-          
+
           if (secondHalfViews > firstHalfViews * 1.5) {
             viewsTrend = 'increasing';
           } else if (secondHalfViews < firstHalfViews * 0.5) {
             viewsTrend = 'decreasing';
           }
-          
+
           // Viewers trend (unique viewers)
           const firstHalfViewerIds = new Set(
             viewInteractions
-              .filter(i => i.createdAt >= activityStartDate && i.createdAt < midpointDate && i.userId)
-              .map(i => i.userId)
+              .filter(
+                (i) =>
+                  i.createdAt >= activityStartDate &&
+                  i.createdAt < midpointDate &&
+                  i.userId
+              )
+              .map((i) => i.userId)
           );
           const secondHalfViewerIds = new Set(
             viewInteractions
-              .filter(i => i.createdAt >= midpointDate && i.userId)
-              .map(i => i.userId)
+              .filter((i) => i.createdAt >= midpointDate && i.userId)
+              .map((i) => i.userId)
           );
-          
+
           if (secondHalfViewerIds.size > firstHalfViewerIds.size * 1.5) {
             viewersTrend = 'increasing';
           } else if (secondHalfViewerIds.size < firstHalfViewerIds.size * 0.5) {
             viewersTrend = 'decreasing';
           }
-          
-          // Note: Watchers trend would need historical data which we don't have in current query
+
+          // Watchers trend would need historical data which we don't have in current query
           // For now, keeping it stable
+          watchersTrend = 'stable';
         }
 
         return {
@@ -327,14 +345,11 @@ const getInfectedSitesHandler = withPrisma(
         email: true
       }
     });
-    
-    const anonymousUsers = allUsers.filter(u => !u.email).length;
-    const registeredUsers = allUsers.filter(u => u.email).length;
-    
-    // Update site data with active user emails
-    const userEmailMap = new Map(allUsers.filter(u => u.email).map(u => [u.id, u.email!]));
-    
-    infectedSites.forEach(site => {
+
+    const anonymousUsers = allUsers.filter((u) => !u.email).length;
+    const registeredUsers = allUsers.filter((u) => u.email).length;
+
+    infectedSites.forEach((site) => {
       // We need to get emails for users who interacted with this site
       // For now, keeping it empty as we'd need to refetch interactions with user data
       site.activeUserEmails = [];
