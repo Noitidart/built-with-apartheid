@@ -1,7 +1,7 @@
 import LoginProtectedLayout from '@/components/LoginProtectedLayout';
 import Spinner from '@/components/Spinner';
 import { getLoginLayoutServerSideProps } from '@/lib/login-layout.backend';
-import type { TGetInfectedSitesResponseData } from '@/pages/api/v1/mods/infected-sites';
+import type { TGetInfectedSitesResponseData } from '@/pages/api/v1/mods/engagement';
 import type { TMe } from '@/types/user';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -19,7 +19,7 @@ type TInfectedSitesPageProps = Awaited<
 function InfectedSitesPage(_props: TInfectedSitesPageProps) {
   return (
     <LoginProtectedLayout
-      title="Infected Sites Monitor"
+      title="Community Response"
       subtitle="Moderator Dashboard"
       subtitleHref="/mods"
       ContentComponent={InfectedSitesContent}
@@ -455,7 +455,7 @@ function getInfectedSitesQuerySignature(params: {
     queryKey: ['mods', 'infected-sites', params],
     queryFn: async function fetchInfectedSites() {
       const response = await axios.get<TGetInfectedSitesResponseData>(
-        '/api/v1/mods/infected-sites',
+        '/api/v1/mods/engagement',
         {
           params
         }
