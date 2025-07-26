@@ -78,6 +78,19 @@ function Dashboard(props: TDashboardProps) {
               View recent user activity and identify bad actors
             </p>
           </Link>
+
+          <Link
+            href="/mods/infected-sites"
+            className="block p-6 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition"
+          >
+            <h3 className="text-xl font-semibold mb-2">
+              Infected Sites Monitor
+            </h3>
+
+            <p className="text-gray-600 dark:text-gray-400">
+              Monitor websites detected as infected
+            </p>
+          </Link>
         </div>
       </div>
 
