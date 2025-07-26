@@ -36,6 +36,7 @@ function ActivityContent(_props: TActivityContentProps) {
   const timeRange = (router.query.range as string) || '24h';
   const interactionType = (router.query.type as string) || 'all';
   const viewMode = (router.query.view as string) || 'timeline';
+  const showMasjidsOnly = router.query.masjids === 'true';
 
   const [expandedInteractionId, setExpandedInteractionId] = useState<
     number | null
@@ -45,13 +46,15 @@ function ActivityContent(_props: TActivityContentProps) {
 
   const activityQuery = useActivityQuery({
     timeRange,
-    interactionType
+    interactionType,
+    showMasjidsOnly
   });
 
   function updateUrlParams(updates: {
     range?: string;
     type?: string;
     view?: string;
+    masjids?: string;
   }) {
     const newQuery = { ...router.query };
 
@@ -76,6 +79,14 @@ function ActivityContent(_props: TActivityContentProps) {
         delete newQuery.view;
       } else {
         newQuery.view = updates.view;
+      }
+    }
+
+    if (updates.masjids !== undefined) {
+      if (updates.masjids === 'false') {
+        delete newQuery.masjids;
+      } else {
+        newQuery.masjids = updates.masjids;
       }
     }
 
@@ -146,6 +157,26 @@ function ActivityContent(_props: TActivityContentProps) {
                 <option value="WATCHED">Website Watches</option>
                 <option value="UNWATCHED">Website Unwatches</option>
               </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="showMasjidsOnly"
+                checked={showMasjidsOnly}
+                onChange={(e) =>
+                  updateUrlParams({
+                    masjids: e.target.checked ? 'true' : 'false'
+                  })
+                }
+                className="mr-2 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+              <label
+                htmlFor="showMasjidsOnly"
+                className="text-sm font-medium"
+              >
+                Show masjids only
+              </label>
             </div>
           </div>
 
@@ -389,20 +420,33 @@ function ActivityTimeline({
                   {interaction.type === 'SCAN' && interaction.scan && (
                     <div className="mt-2 text-sm">
                       {Object.keys(interaction.scan.changes).length > 0 ? (
-                        Object.entries(interaction.scan.changes).map(([companyId, status]) => (
-                          <span key={companyId} className="inline-flex items-center mr-3">
-                            <span className="font-medium capitalize">{companyId}:</span>
-                            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              status === 'new' ? 'bg-green-100 text-green-800' : 
-                              status === 'removed' ? 'bg-red-100 text-red-800' : 
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {status}
+                        Object.entries(interaction.scan.changes).map(
+                          ([companyId, status]) => (
+                            <span
+                              key={companyId}
+                              className="inline-flex items-center mr-3"
+                            >
+                              <span className="font-medium capitalize">
+                                {companyId}:
+                              </span>
+                              <span
+                                className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  status === 'new'
+                                    ? 'bg-green-100 text-green-800'
+                                    : status === 'removed'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {status}
+                              </span>
                             </span>
-                          </span>
-                        ))
+                          )
+                        )
                       ) : (
-                        <span className="text-gray-500 italic">No companies detected</span>
+                        <span className="text-gray-500 italic">
+                          No companies detected
+                        </span>
                       )}
                     </div>
                   )}
@@ -415,13 +459,14 @@ function ActivityTimeline({
                   )}
 
                   {/* Inline milestone details */}
-                  {interaction.type === 'MILESTONE' && interaction.milestone && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      {interaction.milestone.data.type === 'first-scan' && (
-                        <span>First scan milestone reached</span>
-                      )}
-                    </div>
-                  )}
+                  {interaction.type === 'MILESTONE' &&
+                    interaction.milestone && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        {interaction.milestone.data.type === 'first-scan' && (
+                          <span>First scan milestone reached</span>
+                        )}
+                      </div>
+                    )}
 
                   {/* Expanded Details */}
                   {expandedInteractionId === interaction.id && (
@@ -1006,6 +1051,7 @@ function getInteractionTypeStyle(type: string) {
 function getActivityQuerySignature(params: {
   timeRange: string;
   interactionType: string;
+  showMasjidsOnly: boolean;
 }) {
   return {
     queryKey: ['mods', 'activity', params],
@@ -1024,6 +1070,7 @@ function getActivityQuerySignature(params: {
 function useActivityQuery(params: {
   timeRange: string;
   interactionType: string;
+  showMasjidsOnly: boolean;
 }) {
   return useQuery(getActivityQuerySignature(params));
 }

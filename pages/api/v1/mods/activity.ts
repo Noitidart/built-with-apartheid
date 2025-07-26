@@ -38,6 +38,7 @@ export type TGetActivityMonitorResponseData = {
     website: {
       id: number;
       hostname: string;
+      isMasjid: boolean;
     } | null;
     ip: {
       id: number;
@@ -84,6 +85,7 @@ const getActivityMonitorHandler = withPrisma(
     // Parse query parameters
     const timeRange = (req.query.timeRange as string) || '24h';
     const interactionType = (req.query.interactionType as string) || 'all';
+    const showMasjidsOnly = req.query.masjids === 'true';
 
     // Calculate date range
     let startDate: Date;
@@ -109,6 +111,7 @@ const getActivityMonitorHandler = withPrisma(
       createdAt: { gte: Date };
       type?: InteractionType;
       NOT?: { type: InteractionType };
+      website?: { isMasjid: boolean };
     } = {
       createdAt: { gte: startDate }
     };
@@ -118,6 +121,10 @@ const getActivityMonitorHandler = withPrisma(
     } else {
       // Exclude VIEW activities from 'all' queries
       whereClause.NOT = { type: 'VIEW' as InteractionType };
+    }
+
+    if (showMasjidsOnly) {
+      whereClause.website = { isMasjid: true };
     }
 
     // Fetch interactions with all related data
@@ -141,7 +148,8 @@ const getActivityMonitorHandler = withPrisma(
         website: {
           select: {
             id: true,
-            hostname: true
+            hostname: true,
+            isMasjid: true
           }
         },
         ip: {
