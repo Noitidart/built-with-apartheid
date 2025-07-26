@@ -385,6 +385,44 @@ function ActivityTimeline({
                     )}
                   </div>
 
+                  {/* Inline scan details */}
+                  {interaction.type === 'SCAN' && interaction.scan && (
+                    <div className="mt-2 text-sm">
+                      {Object.keys(interaction.scan.changes).length > 0 ? (
+                        Object.entries(interaction.scan.changes).map(([companyId, status]) => (
+                          <span key={companyId} className="inline-flex items-center mr-3">
+                            <span className="font-medium capitalize">{companyId}:</span>
+                            <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              status === 'new' ? 'bg-green-100 text-green-800' : 
+                              status === 'removed' ? 'bg-red-100 text-red-800' : 
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {status}
+                            </span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500 italic">No companies detected</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Inline post content */}
+                  {interaction.type === 'POST' && interaction.post && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
+                      {interaction.post.body}
+                    </div>
+                  )}
+
+                  {/* Inline milestone details */}
+                  {interaction.type === 'MILESTONE' && interaction.milestone && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {interaction.milestone.data.type === 'first-scan' && (
+                        <span>First scan milestone reached</span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Expanded Details */}
                   {expandedInteractionId === interaction.id && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-lg text-sm">
