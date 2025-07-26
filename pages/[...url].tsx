@@ -125,6 +125,8 @@ function UrlPage() {
     queryClient.resetQueries({ queryKey: ['scan', url] });
   };
 
+  useTrackView(scanQuery.data?.website?.id);
+
   const shouldShowIntro = !router.isReady || !url;
 
   // Track scan completed
@@ -1082,6 +1084,19 @@ function getScanErrorInfo(error: unknown): { errorKey: string } {
   }
 
   return { errorKey };
+}
+
+function useTrackView(websiteId: number | undefined) {
+  useEffect(
+    function trackWebsiteView() {
+      if (!websiteId) return;
+
+      axios.post(`/api/v1/${websiteId}/view`).catch((error) => {
+        console.error('Failed to track view:', error);
+      });
+    },
+    [websiteId]
+  );
 }
 
 export default UrlPage;
