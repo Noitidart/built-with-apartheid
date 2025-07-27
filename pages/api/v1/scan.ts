@@ -477,6 +477,14 @@ async function fetchHtml(url: string): Promise<string> {
     throw new FetchHtmlError('requestErrors.networkError');
   }
 
+  const responseText = await response.text();
+
+  console.info('CFBR Response', {
+    status: response.status,
+    headers: Object.fromEntries(response.headers.entries()),
+    responseText
+  });
+
   if (response.status === 429) {
     const retryAfterSecondsHeader = response.headers.get('Retry-After');
     const retryAfterSeconds = retryAfterSecondsHeader
@@ -490,7 +498,9 @@ async function fetchHtml(url: string): Promise<string> {
     throw new FetchHtmlError('requestErrors.serviceUnavailable');
   }
 
-  const result = (await response.json()) as TCloudflareBrowserRenderingResponse;
+  const result = JSON.parse(
+    responseText
+  ) as TCloudflareBrowserRenderingResponse;
 
   if (!result.success) {
     console.info(
