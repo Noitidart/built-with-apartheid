@@ -28,7 +28,8 @@ export async function sendBulkEmail({
     try {
       const data = await resend.emails.send({
         from,
-        to: batch,
+        to: 'Built With Apartheid <delivered@builtwithapartheid.com>',
+        bcc: batch,
         subject,
         react,
         text
