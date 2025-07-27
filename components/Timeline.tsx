@@ -586,7 +586,7 @@ function InteractionLayout({
 
           {/* Body content */}
           <p
-            className={classnames(currentTint.body, tint ? 'font-medium' : '')}
+            className={classnames(currentTint.body, tint ? 'font-medium' : '', 'whitespace-pre-wrap')}
           >
             {body}
           </p>
