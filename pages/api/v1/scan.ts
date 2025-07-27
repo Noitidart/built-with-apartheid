@@ -267,7 +267,11 @@ const newScanHandler = withPrisma(async function newScanHandler(
     websiteHomepageHtmlLowerCase.includes('mosque') ||
     websiteHomepageHtmlLowerCase.includes('masjid') ||
     websiteHomepageHtmlLowerCase.includes('islamic') ||
-    websiteHomepageHtmlLowerCase.includes('pray');
+    websiteHomepageHtmlLowerCase.includes('pray') ||
+    hostname.includes('masjid') ||
+    hostname.includes('mosque') ||
+    // dont spell center as some spell it centre
+    hostname.includes('islamiccent');
 
   // Update website isMasjid status if it changed
   if (isProbablyMasjid !== website.isMasjid) {
