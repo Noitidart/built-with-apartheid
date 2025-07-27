@@ -74,6 +74,18 @@ export default function ScanInfoMessage({
           Report
         </button>
       </div>
+      <span>
+        Want to help improve detection?{' '}
+        <a
+          rel="noopener noreferrer"
+          target="_blank"
+          href="https://techforpalestine.org/get-involved/"
+          // className="underline decoration-solid underline-offset-2"
+          className="bg-yellow-50 dark:bg-yellow-900/80  border-yellow-200 dark:border-yellow-800 underline  text-yellow-700 dark:text-yellow-400 sm:text-small rounded-lg text-sm gap-1 transition-colors duration-200  shadow-sm"
+        >
+          Join here
+        </a>
+      </span>
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
