@@ -214,7 +214,13 @@ const newScanHandler = withPrisma(async function newScanHandler(
   // Perform new scan
   let websiteHomepageHtml: string;
   try {
-    websiteHomepageHtml = await fetchHtml(homepageUrl);
+    // Currently we only detect elementor or wix, so if the domain has wix.com or wixsite.com,
+    // we will treat it as a wix site. Once we start detecting other things, then still do a scan.
+    if (hostname.includes('wix.com') || hostname.includes('wixsite.com')) {
+      websiteHomepageHtml = 'Wix.com';
+    } else {
+      websiteHomepageHtml = await fetchHtml(homepageUrl);
+    }
   } catch (error) {
     if (error instanceof FetchHtmlError) {
       // If network error and we have cached scan, fallback to cached version with error
