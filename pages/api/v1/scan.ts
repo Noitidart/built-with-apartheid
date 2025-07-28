@@ -475,7 +475,10 @@ async function fetchHtml(url: string): Promise<string> {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${cfApiToken}`
         },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({
+          url,
+          rejectResourceTypes: ['image', 'media']
+        })
       }
     );
   } catch (error) {
