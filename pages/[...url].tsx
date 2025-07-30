@@ -221,8 +221,6 @@ function UrlPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [sendingCleanEmail, setSendingCleanEmail] = useState(false);
-
   return (
     <>
       <header className="w-full max-w-4xl mx-auto">
